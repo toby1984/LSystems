@@ -17,6 +17,9 @@ package de.codesourcery.lsystems.lsystem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
 
 /**
  * Lindenmayer-System.
@@ -25,15 +28,33 @@ import java.util.List;
  */
 public class LSystem 
 {
-	private final String axiom;
-	public String state;
+	private final TokenSeq axiom;
+	public List<Token> state;
 	private final List<RewritingRule> rules = new ArrayList<>();
 	private int recursionCount=0;
 	
-	public LSystem(String axiom) 
+	private final ParameterProvider parameterProvider;
+	
+	public LSystem(TokenSeq axiom) 
 	{
-		this.state = axiom;
+		this(axiom, new ParameterProvider() {
+			
+			@Override
+			public String getParameter(Token token, String identifier) {
+				throw new UnsupportedOperationException("Not implemented (parameter: "+identifier+")");
+			}
+		});
+	}
+	
+	public LSystem(TokenSeq axiom,ParameterProvider provider) 
+	{
 		this.axiom = axiom;
+		this.state = new ArrayList<>( axiom.toList() );
+		this.parameterProvider = provider;
+	}	
+	
+	public ParameterProvider getParameterProvider() {
+		return parameterProvider;
 	}
 	
 	/**
@@ -41,8 +62,9 @@ public class LSystem
 	 * 
 	 * @return
 	 */
-	public final LSystem reset() {
-		this.state = axiom;
+	public final LSystem reset() 
+	{
+		this.state = new ArrayList<>( axiom.toList() );
 		this.recursionCount = 0;
 		resetHook();
 		return this;
@@ -90,60 +112,70 @@ outer:
 		while( ! ctx.eof() ) 
 		{
 			for ( RewritingRule r : rules ) {
-				if ( r.matches( ctx ) ) 
+				if ( r.matches( ctx , parameterProvider ) ) 
 				{
-					r.rewrite( ctx );
+					r.rewrite( ctx , parameterProvider );
 					continue outer;
 				}
 			}
 			ctx.write( ctx.next() );
 		}
-		this.state = ctx.buffer.toString();
+		this.state = ctx.buffer;
 		recursionCount++;
 	}
 	
 	protected final class MyContext implements RewritingContext 
 	{
-		private String state;
-		private int index = 0;
+		private List<Token> lexer;
+		private int index=0;
+		public final List<Token> buffer = new ArrayList<>();
 		
-		private char currentSymbol;
-	
-		public final StringBuilder buffer = new StringBuilder();
-		
-		public MyContext(String initialState) {
-			state = initialState;
-			currentSymbol = initialState.charAt(0);
+		public MyContext(List<Token> lexer) {
+			this.lexer = lexer;
 		}
 		
 		@Override
 		public boolean eof() {
-			return index >= state.length();
+			return index>=lexer.size();
 		}
 
 		@Override
-		public char peek() {
-			return currentSymbol;
+		public Token peek() {
+			return lexer.get(index);
 		}
 
 		@Override
-		public char next() {
-			char result = currentSymbol;
-			index++;
-			if ( index < state.length() ) {
-				currentSymbol = state.charAt(index);
+		public Token next() {
+			return lexer.get(index++);
+		}
+		
+		@Override
+		public Token next(TokenType type) 
+		{
+			if ( ! peek().type.equals( type ) ) {
+				throw new RuntimeException("Unexpected token "+peek()+", expected: "+type);
 			}
-			return result;
+			return next();
+		}		
+
+		@Override
+		public void write(TokenSeq s) {
+			buffer.addAll( s.toList() );
+		}
+		
+		@Override
+		public void write(Token s) {
+			buffer.add( s );
+		}		
+		
+		@Override
+		public boolean peek(TokenType type) {
+			return type.equals( peek().type );
 		}
 
 		@Override
-		public void write(String s) {
-			buffer.append( s );
-		}
-
-		@Override
-		public void write(char c) {
-			buffer.append(c);
+		public int getRecursionCount() {
+			return recursionCount;
 		}
 	}
 }

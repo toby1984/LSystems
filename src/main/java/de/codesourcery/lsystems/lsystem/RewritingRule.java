@@ -28,12 +28,12 @@ public interface RewritingRule
 	 * @param context
 	 * @return
 	 */
-	public boolean matches(RewritingContext context);
+	public boolean matches(RewritingContext context,ParameterProvider provider);
 	
 	/**
 	 * Applies this rule.
 	 * 
 	 * @param context
 	 */
-	public void rewrite(RewritingContext context);
+	public void rewrite(RewritingContext context,ParameterProvider provider);
 }

@@ -15,29 +15,33 @@
  */
 package de.codesourcery.lsystems.lsystem.rules;
 
+import de.codesourcery.lsystems.lsystem.ParameterProvider;
 import de.codesourcery.lsystems.lsystem.RewritingContext;
 import de.codesourcery.lsystems.lsystem.RewritingRule;
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
+import de.codesourcery.lsystems.lsystem.TokenSeq;
 
 public final class SimpleRule implements RewritingRule {
 
-	private final char expected;
-	private final String replacement;
+	private final TokenType expected;
+	private final TokenSeq replacement;
 	
-	public SimpleRule(char expected,String replacement) {
+	public SimpleRule(TokenType expected,TokenSeq replacement) 
+	{
 		this.expected = expected;
 		this.replacement = replacement;
 	}
 	
 	@Override
-	public boolean matches(RewritingContext context) 
+	public boolean matches(RewritingContext context,ParameterProvider provider) 
 	{
-		return context.peek() == expected;
+		return context.peek(expected);
 	}
 
 	@Override
-	public void rewrite(RewritingContext context) 
+	public void rewrite(RewritingContext context,ParameterProvider provider) 
 	{
-		context.next();
+		context.next(expected);
 		context.write( replacement );
 	}
 	
@@ -45,5 +49,4 @@ public final class SimpleRule implements RewritingRule {
 	public String toString() {
 		return expected+" -> "+replacement;
 	}
-
 }

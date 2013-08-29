@@ -23,18 +23,24 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.KeyAdapter;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.text.StyleContext.SmallAttributeSet;
 
+import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.LSystem;
+import de.codesourcery.lsystems.lsystem.ParameterProvider;
 import de.codesourcery.lsystems.lsystem.RewritingRule;
+import de.codesourcery.lsystems.lsystem.Token;
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
 import de.codesourcery.lsystems.lsystem.rules.StochasticRule;
+import de.codesourcery.lsystems.rendering.LSystemRenderer2D;
 import de.codesourcery.lsystems.rendering.MinMaxRenderingContext2D;
 import de.codesourcery.lsystems.rendering.RenderingContext2D;
-import de.codesourcery.lsystems.rendering.LSystemRenderer2D;
 import de.codesourcery.lsystems.rendering.Vec2;
 
 public class Main 
@@ -62,7 +68,25 @@ public class Main
 	
 	protected static LSystem createLSystem(final Random random) 
 	{
-		final LSystem lSystem = new LSystem("F") 
+		final LSystem lSystem;
+		final ParameterProvider provider = new ParameterProvider() 
+		{
+			@Override
+			public String getParameter(Token token, String identifier) 
+			{
+				switch(identifier) 
+				{
+				case "bigAngle":
+					return "15";
+				case "smallAngle":
+					return "7";
+				default:
+					throw new NoSuchElementException("Unknown parameter '"+identifier+"' in token "+token);
+				}
+			}
+		};
+		
+		lSystem = new LSystem( ExpressionLexer.parse( "F" ) , provider ) 
 		{
 			@Override
 			protected void resetHook() 
@@ -72,13 +96,13 @@ public class Main
 		};
 		
 		final RewritingRule[] rules = {
-				replaceRule( 'F' , "F[+F]F[-F]F" ),
-				replaceRule( 'F' , "F[+F]+F" ),
+				replaceRule( TokenType.FORWARD , "F[+(${bigAngle})F]F[-(${bigAngle})F]F" ),
+				replaceRule( TokenType.FORWARD , "F[+(${smallAngle})F]+(${smallAngle})F" ),
 				// replaceRule( 'F' , "F" ),
-				replaceRule( 'F' , "F[-F]--F" )
+				replaceRule( TokenType.FORWARD , "F[-(${smallAngle})F]-(${smallAngle})-(${smallAngle})F" )
 		}; 
 		
-		lSystem.addRule( new StochasticRule('F' , rules )
+		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules )
 		{
 			@Override
 			protected float getRandomNumber() {
@@ -88,8 +112,8 @@ public class Main
 		return lSystem;
 	}
 
-	protected static class MyPanel extends JPanel {
-		
+	protected static class MyPanel extends JPanel 
+	{
 		private final LSystem lSystem;
 		
 		public final KeyAdapter keyListener =  new KeyAdapter() 

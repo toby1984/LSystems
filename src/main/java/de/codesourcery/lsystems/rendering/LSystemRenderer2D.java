@@ -17,7 +17,10 @@ package de.codesourcery.lsystems.rendering;
 
 import java.awt.Color;
 
+import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.LSystem;
+import de.codesourcery.lsystems.lsystem.ParameterProvider;
+import de.codesourcery.lsystems.lsystem.Token;
 
 /**
  * Basic {@link LSystemRenderer} that supports rendering
@@ -90,58 +93,87 @@ public class LSystemRenderer2D implements LSystemRenderer {
 	@Override
 	public void render(LSystem system, RenderingContext2D context) 
 	{
-		final String state = system.state;
-		
-		final Turtle2D turtle = new Turtle2D(context);					
-		final TurtleStack stack = new TurtleStack();
-
-		turtle.position.set( 0,0 );			
-		turtle.penDown();
-
-		final Color green = darken(Color.GREEN,0.5f);
 		float drawLen = (float) Math.pow( s , system.getRecursionCount() ); 
 
-		final int len = state.length();
-		for ( int i = 0  ; i < len ; i++ ) {
+		final DefaultTokenRenderer renderer = new DefaultTokenRenderer(context, drawLen , alphaInDegrees , system.getParameterProvider() );
+		
+		for ( Token tok : system.state ) 
+		{
+			renderer.renderToken( tok );
+		}
+	}	
+
+	protected static final class DefaultTokenRenderer implements TokenRenderer 
+	{
+		private final Turtle2D turtle;
+		private final TurtleStack stack;
+		private final float drawLen;
+		private final float alphaInDegrees;
+		private final Color green = darken(Color.GREEN,0.5f);
+		private final ParameterProvider parameterProvider;
+		
+		public DefaultTokenRenderer(RenderingContext2D context,float drawLen,float alphaInDegrees,ParameterProvider parameterProvider) 
+		{
+			this.parameterProvider = parameterProvider;
+			this.drawLen = drawLen;
+			this.alphaInDegrees = alphaInDegrees;
 			
-			switch( state.charAt(i) ) 
+			this.turtle = new Turtle2D(context);					
+			this.stack = new TurtleStack();
+
+			turtle.position.set( 0,0 );			
+			turtle.penDown();
+		}
+		
+		@Override
+		public void renderToken(Token token) 
+		{
+			switch( token.type )
 			{
-				case '[':
+				case PUSH_STATE:
 					stack.push( turtle );
 					break;
-				case ']':
+				case POP_STATE:
 					stack.pop( turtle );
 					break;
-				case 'g':
-					turtle.setColor( green); 
+				case COLOR_GREEN:
+					turtle.setColor( green ); 
 					break;
-				case 'b':
+				case COLOR_BLUE:
 					turtle.setColor( Color.BLUE );
-				case 'r':
+				case COLOR_RED:
 					turtle.setColor( Color.RED );						
 					break;		
-				case 'c':
+				case DRAW_CIRCLE:
 					turtle.circle( 2.0f );
 					break;	
-				case 'f':
+				case FORWARD_NODRAW:
 					turtle.penUp();
 					turtle.move( drawLen );
 					turtle.penDown();
 					break;
-				case 'F':
+				case FORWARD:
 					turtle.move( drawLen );
 					break;
-				case '+':
-					turtle.rotateLeft( alphaInDegrees );
+				case ROTATE_LEFT:
+					if ( token.hasParameters() ) {
+						turtle.rotateLeft( token.floatParameter(0,parameterProvider) );
+					} else {
+						turtle.rotateLeft( alphaInDegrees );
+					}
 					break;
-				case '-':
-					turtle.rotateRight( alphaInDegrees );
+				case ROTATE_RIGHT:
+					if ( token.hasParameters() ) {
+						turtle.rotateRight( token.floatParameter(0,parameterProvider) );
+					} else {
+						turtle.rotateRight( alphaInDegrees );
+					}					
 					break;
 				default:
-					throw new RuntimeException("Unhandled symbol: '"+state.charAt(i)+"'");
+					throw new RuntimeException("Unhandled token: '"+token+"'");
 			}
 		}
-	}	
+	}
 	
 	protected static Color darken(Color c , float f) {
 		return new Color( (c.getRed()/255.0f) * f , (c.getGreen()/255.0f ) *f , ( c.getBlue()*255.0f)*f );

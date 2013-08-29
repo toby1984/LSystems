@@ -15,6 +15,8 @@
  */
 package de.codesourcery.lsystems.lsystem;
 
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
+
 /**
  * Rewriting context.
  *
@@ -37,7 +39,13 @@ public interface RewritingContext
 	 * Peeks at the symbol at the current cursor position.
 	 * @return
 	 */
-	char peek();
+	Token peek();
+	
+	/**
+	 * Peeks at the symbol at the current cursor position.
+	 * @return
+	 */
+	boolean peek(Token.TokenType type);	
 	
 	/**
 	 * Returns the symbol at the current cursor position and
@@ -45,17 +53,27 @@ public interface RewritingContext
 	 * 
 	 * @return
 	 */
-	char next();
+	Token next();
 	
 	/**
-	 * Writes a string of symbols.
+	 * Returns the symbol at the current cursor position and
+	 * advances the cursor by one symbol.
+	 * 
+	 * @return
+	 */
+	Token next(TokenType type);	
+	
+	/**
+	 * Writes a sequence of tokens.
 	 * @param s
 	 */
-	void write(String s);
+	void write(TokenSeq token);
 	
 	/**
-	 * Writes a single symbol.
-	 * @param c
+	 * Writes a token.
+	 * @param s
 	 */
-	void write(char c);	
+	void write(Token token);	
+	
+	public int getRecursionCount();
 }

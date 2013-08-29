@@ -15,6 +15,10 @@
  */
 package de.codesourcery.lsystems.lsystem;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
 import de.codesourcery.lsystems.lsystem.rules.SimpleRule;
 
 /**
@@ -36,7 +40,20 @@ public abstract class RuleGenerator {
 	 * @param replacement
 	 * @return
 	 */
-	public static RewritingRule replaceRule(char expected,String replacement) {
+	public static RewritingRule replaceRule(TokenType expected,TokenSeq replacement) {
 		return new SimpleRule( expected , replacement );
 	}
+	
+	/**
+	 * Creates a {@link SimpleRule} instance that replaced a matching symbol
+	 * with some replacement sequence.
+	 *  
+	 * @param expected
+	 * @param replacement
+	 * @return
+	 */
+	public static RewritingRule replaceRule(TokenType expected,String replacement) 
+	{
+		return new SimpleRule( expected , ExpressionLexer.parse( replacement ) );
+	}	
 }

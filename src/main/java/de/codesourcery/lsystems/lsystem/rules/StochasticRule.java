@@ -18,12 +18,14 @@ package de.codesourcery.lsystems.lsystem.rules;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.codesourcery.lsystems.lsystem.ParameterProvider;
 import de.codesourcery.lsystems.lsystem.RewritingContext;
 import de.codesourcery.lsystems.lsystem.RewritingRule;
+import de.codesourcery.lsystems.lsystem.Token.TokenType;
 
 public abstract class StochasticRule implements RewritingRule {
 
-	private final char expected;
+	private final TokenType expected;
 	private final List<Interval> rules=new ArrayList<>();
 	
 	protected static final class Interval 
@@ -49,7 +51,7 @@ public abstract class StochasticRule implements RewritingRule {
 		}
 	}
 	
-	public StochasticRule(char expected,RewritingRule[] rules) 
+	public StochasticRule(TokenType expected,RewritingRule[] rules) 
 	{
 		this.expected =expected;
 		final float[] probabilities = new float[rules.length];
@@ -60,7 +62,7 @@ public abstract class StochasticRule implements RewritingRule {
 		setupRules( rules , probabilities);
 	}
 	
-	public StochasticRule(char expected,RewritingRule[] rules,float[] probabilities) 
+	public StochasticRule(TokenType expected,RewritingRule[] rules,float[] probabilities) 
 	{
 		this.expected =expected;
 		setupRules( rules , probabilities);
@@ -83,20 +85,20 @@ public abstract class StochasticRule implements RewritingRule {
 	}
 	
 	@Override
-	public boolean matches(RewritingContext context) 
+	public boolean matches(RewritingContext context,ParameterProvider provider) 
 	{
-		return context.peek() == expected;
+		return context.peek(expected);
 	}
 
 	@Override
-	public void rewrite(RewritingContext context) 
+	public void rewrite(RewritingContext context,ParameterProvider provider) 
 	{
 		final float value = getRandomNumber();
 		for ( Interval iv : rules ) 
 		{
 			if ( iv.contains( value ) ) 
 			{
-				iv.rule.rewrite( context );
+				iv.rule.rewrite( context , provider );
 				return;
 			}
 		}
