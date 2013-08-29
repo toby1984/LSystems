@@ -33,7 +33,7 @@ public final class TurtleStack {
 	 * 
 	 * @param turtle
 	 */
-	public void push(Turtle2D turtle) 
+	public void pushState(Turtle2D turtle) 
 	{
 		stack.push( new TurtleStackEntry2D(turtle));
 	}
@@ -43,7 +43,7 @@ public final class TurtleStack {
 	 * 
 	 * @param turtle
 	 */
-	public void pop(Turtle2D turtle) throws EmptyStackException {
+	public void popState(Turtle2D turtle) throws EmptyStackException {
 		stack.pop().apply( turtle );
 	}
 	

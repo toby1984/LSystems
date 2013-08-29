@@ -16,6 +16,7 @@
 package de.codesourcery.lsystems.lsystem;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -87,6 +88,20 @@ public class LSystem
 		this.rules.add(rule);
 		return this;
 	}
+	
+	public final LSystem addRules(RewritingRule rule,RewritingRule... moreRules ) 
+	{
+		if (rule == null) {
+			throw new IllegalArgumentException("rule must not be null");
+		}
+		rules.add(rule);
+		if ( moreRules != null ) {
+			for ( RewritingRule r : moreRules ) {
+				rules.add(r);
+			}
+		}
+		return this;
+	}	
 	
 	/**
 	 * Returns the current recursion depth.

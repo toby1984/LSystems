@@ -15,9 +15,6 @@
  */
 package de.codesourcery.lsystems.lsystem;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 import de.codesourcery.lsystems.lsystem.rules.SimpleRule;
 
@@ -29,7 +26,7 @@ import de.codesourcery.lsystems.lsystem.rules.SimpleRule;
  */
 public abstract class RuleGenerator {
 
-	private RuleGenerator() {
+	protected RuleGenerator() {
 	}
 	
 	/**
@@ -56,4 +53,9 @@ public abstract class RuleGenerator {
 	{
 		return new SimpleRule( expected , ExpressionLexer.parse( replacement ) );
 	}	
+
+	public static RewritingRule replaceRule(String expectedString , String replacement) 
+	{
+		return new SimpleRule( TokenType.CHARACTERS , expectedString , ExpressionLexer.parse( replacement ) );
+	}		
 }

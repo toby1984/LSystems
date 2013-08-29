@@ -27,6 +27,7 @@ public abstract class StochasticRule implements RewritingRule {
 
 	private final TokenType expected;
 	private final List<Interval> rules=new ArrayList<>();
+	private final String name;
 	
 	protected static final class Interval 
 	{
@@ -53,6 +54,12 @@ public abstract class StochasticRule implements RewritingRule {
 	
 	public StochasticRule(TokenType expected,RewritingRule[] rules) 
 	{
+		this(null,expected,rules);
+	}
+	
+	public StochasticRule(String name , TokenType expected,RewritingRule[] rules) 
+	{
+		this.name = name;
 		this.expected =expected;
 		final float[] probabilities = new float[rules.length];
 		float prop = 1.0f / rules.length;
@@ -64,8 +71,19 @@ public abstract class StochasticRule implements RewritingRule {
 	
 	public StochasticRule(TokenType expected,RewritingRule[] rules,float[] probabilities) 
 	{
+		this(null,expected,rules,probabilities);
+	}
+	
+	public StochasticRule(String name , TokenType expected,RewritingRule[] rules,float[] probabilities) 
+	{
+		this.name = name;
 		this.expected =expected;
 		setupRules( rules , probabilities);
+	}
+	
+	@Override
+	public final String getName() {
+		return name;
 	}
 	
 	private void setupRules(RewritingRule[] rules,float[] probabilities) {

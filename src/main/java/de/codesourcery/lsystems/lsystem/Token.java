@@ -9,18 +9,25 @@ import java.util.regex.Pattern;
 public final class Token 
 {
 	public final TokenType type;
+	public final String value;
 	public final List<String> params;
 	
-	public Token(TokenType type) {
+	public Token(TokenType type,String value) {
 		this.type = type;
 		this.params = null;
+		this.value = value;
 	}
 	
-	public Token(TokenType type,List<String> params) {
+	public Token(TokenType type,String value , List<String> params) {
 		this.type = type;
 		this.params = params;
+		this.value = value;
 	}
 	
+	@Override
+	public String toString() {
+		return getAsString(null, false );
+	}
 	public boolean hasParameters() {
 		return params != null && params.size() > 0;
 	}
@@ -65,7 +72,7 @@ public final class Token
 	public String getAsString(ParameterProvider provider,boolean resolvePlaceholders) 
 	{
 		if ( ! hasParameters() ) {
-			return type.getIdentifier();
+			return value;
 		}
 		final StringBuilder paramString = new StringBuilder();
 		
@@ -85,33 +92,32 @@ public final class Token
 				}
 			}
 		}
-		return type.getIdentifier()+"("+paramString+")";
+		return value+"("+paramString+")";
 	}
 	
 	public static enum TokenType 
 	{
-		PUSH_STATE("["),
-		POP_STATE("]"),
-		COLOR_GREEN("g"),
-		COLOR_BLUE("b"),
-		COLOR_RED("r"),
-		DRAW_CIRCLE("c"),
-		FORWARD("F"),
-		FORWARD_NODRAW("f"),
-		ROTATE_LEFT("+",0,1),
-		ROTATE_RIGHT("-",0,1);
+		PUSH_STATE,
+		POP_STATE,
+		COLOR_GREEN,
+		COLOR_BLUE,
+		COLOR_RED,
+		DRAW_CIRCLE,
+		DRAW_FILLED_CIRCLE,		
+		FORWARD(0,1),
+		FORWARD_NODRAW(0,1),
+		ROTATE_LEFT(0,1),
+		ROTATE_RIGHT(0,1),
+		CHARACTERS;
 		
 		private final int maxParameterCount;
 		private final int minParameterCount;		
-		private final String s;
 		
-		private TokenType(String s) {
-			this.s = s;
+		private TokenType() {
 			this.minParameterCount = this.maxParameterCount=0;
 		}
 		
-		private TokenType(String s,int minParameterCount,int maxParameterCount) {
-			this.s = s;
+		private TokenType(int minParameterCount,int maxParameterCount) {
 			if ( minParameterCount > maxParameterCount ) {
 				throw new IllegalArgumentException();
 			}
@@ -129,10 +135,6 @@ public final class Token
 		
 		public int getMaxParameterCount() {
 			return maxParameterCount;
-		}
-		
-		public final String getIdentifier() {
-			return s;
 		}
 		
 		protected final int parseInt(String s) {

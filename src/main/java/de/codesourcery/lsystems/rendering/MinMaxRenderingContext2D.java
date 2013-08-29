@@ -16,6 +16,9 @@
 package de.codesourcery.lsystems.rendering;
 
 import java.awt.Color;
+import java.awt.Point;
+
+import de.codesourcery.lsystems.rendering.Turtle2D.FloatPolygon;
 
 public final class MinMaxRenderingContext2D implements RenderingContext2D 
 {
@@ -41,5 +44,30 @@ public final class MinMaxRenderingContext2D implements RenderingContext2D
 		tmp.set( center );
 		tmp.plus( radius , radius );
 		this.max.max( tmp );				
+	}
+	
+	@Override
+	public void toScreenCoordinates(float modelX, float modelY, Point point) {
+		point.x = (int) modelX;
+		point.y = (int) modelY;
+	}
+
+	@Override
+	public void drawPolygon(Color color , FloatPolygon polygon) 
+	{
+		for ( int i = 0 ; i < polygon.npoints ; i++ ) {
+			this.min.min( polygon.xpoints[i] , polygon.ypoints[i] );
+			this.max.max( polygon.xpoints[i] , polygon.ypoints[i] );
+		}
+	}
+
+	@Override
+	public void drawFilledPolygon(Color color , FloatPolygon polygon) {
+		drawPolygon( color , polygon );
+	}
+
+	@Override
+	public void drawFilledCircle(Color color, Vec2 center, float radius) {
+		drawCircle(color, center, radius);
 	}
 }

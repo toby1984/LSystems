@@ -15,13 +15,13 @@
  */
 package de.codesourcery.lsystems;
 
-import static de.codesourcery.lsystems.lsystem.RuleGenerator.replaceRule;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.event.KeyAdapter;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -29,26 +29,46 @@ import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import javax.swing.text.StyleContext.SmallAttributeSet;
 
 import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.LSystem;
 import de.codesourcery.lsystems.lsystem.ParameterProvider;
 import de.codesourcery.lsystems.lsystem.RewritingRule;
+import de.codesourcery.lsystems.lsystem.RuleGenerator;
 import de.codesourcery.lsystems.lsystem.Token;
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
+import de.codesourcery.lsystems.lsystem.TokenSeq;
 import de.codesourcery.lsystems.lsystem.rules.StochasticRule;
+import de.codesourcery.lsystems.rendering.DefaultTokenTranslator;
+import de.codesourcery.lsystems.rendering.HeartRenderer;
 import de.codesourcery.lsystems.rendering.LSystemRenderer2D;
 import de.codesourcery.lsystems.rendering.MinMaxRenderingContext2D;
+import de.codesourcery.lsystems.rendering.PrimitiveType;
 import de.codesourcery.lsystems.rendering.RenderingContext2D;
+import de.codesourcery.lsystems.rendering.TokenTranslator;
+import de.codesourcery.lsystems.rendering.Turtle2D.FloatPolygon;
 import de.codesourcery.lsystems.rendering.Vec2;
 
-public class Main 
+public class Main extends RuleGenerator
 {
+	public static final boolean DEBUG = false;
+	
 	private static long seed = 0xdeadbeef;
 	
+	private final TokenTranslator myTranslator = new DefaultTokenTranslator() {
+		
+		{
+			mapSymbols( "H" , PrimitiveType.CUSTOM_1 );
+			mapSymbols( "G" , PrimitiveType.FORWARD );			
+		}
+	};	
+	
 	public static void main(String[] args) {
-
+		new Main().run(args);
+	}
+	
+	protected void run(String[] args) 
+	{
 		MyPanel panel = new MyPanel( createLSystem( new Random() ) );
 		panel.setSize( new Dimension(600,400 ) );
 		panel.setMinimumSize( new Dimension(600,400 ) );
@@ -63,7 +83,7 @@ public class Main
 		frame.pack();
 		frame.setVisible( true );
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		panel.requestFocus();
+		panel.requestFocus();		
 	}
 	
 	protected static LSystem createLSystem(final Random random) 
@@ -86,7 +106,9 @@ public class Main
 			}
 		};
 		
-		lSystem = new LSystem( ExpressionLexer.parse( "F" ) , provider ) 
+		final TokenSeq parsed = ExpressionLexer.parse( "F" );
+		
+		lSystem = new LSystem( parsed , provider ) 
 		{
 			@Override
 			protected void resetHook() 
@@ -96,13 +118,12 @@ public class Main
 		};
 		
 		final RewritingRule[] rules = {
-				replaceRule( TokenType.FORWARD , "F[+(${bigAngle})F]F[-(${bigAngle})F]F" ),
-				replaceRule( TokenType.FORWARD , "F[+(${smallAngle})F]+(${smallAngle})F" ),
-				// replaceRule( 'F' , "F" ),
-				replaceRule( TokenType.FORWARD , "F[-(${smallAngle})F]-(${smallAngle})-(${smallAngle})F" )
+				replaceRule( "F", "b[+(12.5)F]F[-(12.5)F]F" ),
+				replaceRule( "F", "bG[+(12.5)G]G[-(12.5)G]G" ),
+				replaceRule( "G", "rCb" ),				
 		}; 
 		
-		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules )
+		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules , new float[]{0.6f,0.3f,0.1f} )
 		{
 			@Override
 			protected float getRandomNumber() {
@@ -112,9 +133,10 @@ public class Main
 		return lSystem;
 	}
 
-	protected static class MyPanel extends JPanel 
+	protected class MyPanel extends JPanel 
 	{
 		private final LSystem lSystem;
+		private boolean autoFit = true;
 		
 		public final KeyAdapter keyListener =  new KeyAdapter() 
 		{
@@ -157,33 +179,43 @@ public class Main
 			for ( ; recursion < 9 ; recursion++) 
 			{
 				lSystem.rewrite();
+				// System.out.println("STATE: "+lSystem.state);
 			}
 			render( lSystem , alphaInDegrees ,g );
 		}
-
+		
 		private void render(LSystem lSystem, float alphaInDegrees , Graphics2D g) 
 		{
-			final LSystemRenderer2D renderer = new LSystemRenderer2D();
+			final LSystemRenderer2D renderer = new HeartRenderer();
+			renderer.setTokenTranslator( myTranslator );
 			renderer.setAlphaInDegrees( alphaInDegrees );
 			
-			// 1st pass: determine min/max coordinates
-			MinMaxRenderingContext2D ctx = new MinMaxRenderingContext2D();
-			renderer.render( lSystem , ctx );
+			final float width = (getWidth()*0.98f);
+			final float height = (getHeight()*0.98f);
 			
-			float modelWidth = ctx.max.x - ctx.min.x ;
-			float modelHeight = ctx.max.y - ctx.min.y ;
+			final int screenCenterX = getWidth() / 2;
+			final int screenCenterY = getHeight() / 2;
 			
-			float modelCenterX = (ctx.max.x + ctx.min.x)/2.0f;
-			float modelCenterY = (ctx.max.y + ctx.min.y)/2.0f;
-			
-			float scaleX = getWidth() / modelWidth;
-			float scaleY = getHeight() / modelHeight;
-			
-			// 2nd pass: render using scaled coordinates
-			int screenCenterX = getWidth() / 2;
-			int screenCenterY = getHeight() / 2;
-			
-			final BasicRenderingContext2D ctx2 = new BasicRenderingContext2D( modelCenterX , modelCenterY , scaleX ,scaleY ,screenCenterX,screenCenterY, g );
+			final RenderingContext2D ctx2;
+			if ( autoFit ) {
+				// 1st pass: determine min/max coordinates
+				final MinMaxRenderingContext2D ctx = new MinMaxRenderingContext2D();
+				renderer.render( lSystem , ctx );
+
+				float modelWidth = ctx.max.x - ctx.min.x ;
+				float modelHeight = ctx.max.y - ctx.min.y ;
+
+				float modelCenterX = (ctx.max.x + ctx.min.x)/2.0f;
+				float modelCenterY = (ctx.max.y + ctx.min.y)/2.0f;
+
+				float scaleX = width / modelWidth;
+				float scaleY = height / modelHeight;
+
+				// 2nd pass: render using scaled coordinates
+				ctx2 = new BasicRenderingContext2D( modelCenterX , modelCenterY , scaleX ,scaleY ,screenCenterX,screenCenterY, g );
+			} else {
+				ctx2 = new BasicRenderingContext2D( 0 , 0 , 1 , 1 ,screenCenterX,screenCenterY, g );				
+			}
 			renderer.render( lSystem , ctx2 );			
 		} 
 	} 
@@ -201,8 +233,6 @@ public class Main
 		private final int screenCenterX;
 		private final int screenCenterY; 
 
-		private Color lastColor = null;
-
 		public BasicRenderingContext2D(float cx, float cy, float scaleX, float scaleY, int screenCenterX , int screenCenterY , Graphics2D g) 
 		{
 			this.cx = cx;
@@ -213,15 +243,26 @@ public class Main
 			this.screenCenterY = screenCenterY;
 			this.g = g;
 		}
-
-		private void setColor( Color color ) 
-		{
-			if ( lastColor == null || lastColor != color ) {
-				g.setColor( color );
-				lastColor = color;
-			}
+		
+		@Override
+		public void toScreenCoordinates(float modelX, float modelY, Point point) {
+			point.x = screenCenterX + Math.round( ( modelX - cx ) * scaleX );
+			point.y = screenCenterY + Math.round( ( modelY - cy ) * scaleY );
 		}
-
+		
+		protected Polygon toPolygon(FloatPolygon input) {
+			
+			final Polygon result = new Polygon();
+			final Point screenCoords = new Point();
+			
+			for ( int i = 0 ; i < input.npoints ; i++ ) 
+			{
+				toScreenCoordinates( input.xpoints[i] , input.ypoints[i] , screenCoords );
+				result.addPoint( screenCoords.x , screenCoords.y );
+			}
+			return result;
+		}
+		
 		@Override
 		public void drawLine(Color color , Vec2 p1, Vec2 p2) {
 
@@ -231,25 +272,47 @@ public class Main
 			int x2 = screenCenterX + Math.round( (p2.x-cx)*scaleX );
 			int y2 = screenCenterY + Math.round( (p2.y-cy)*scaleY );
 			
-			setColor( color );
+			g.setColor(color);
 			g.drawLine( x1,y1,x2,y2 );
+		}
+
+		private  void drawCircle(Color color, Vec2 center, float radius,boolean filled) 
+		{
+			int w = 2 * (int) radius;
+			int h = 2 * (int) radius;
+			
+			float x = center.x-radius;
+			float y = center.y-radius;
+			
+			int x1 = screenCenterX + Math.round( (x-cx)*scaleX );
+			int y1 = screenCenterY + Math.round( (y-cy)*scaleY );
+			
+			g.setColor(color);
+			g.fillArc( x1 , y1 , w , h , 0 , 360 );
 		}
 
 		@Override
 		public void drawCircle(Color color, Vec2 p1, float radius) 
 		{
-			setColor(color);
-
-			int w = 2 * (int) radius;
-			int h = 2 * (int) radius;
-			
-			float x = p1.x-radius;
-			float y = p1.y-radius;
-			
-			int x1 = screenCenterX + Math.round( (x-cx)*scaleX );
-			int y1 = screenCenterY + Math.round( (y-cy)*scaleY );
-			
-			g.fillArc( x1 , y1 , w , h , 0 , 360 );
+			drawCircle(color, p1, radius, false );
+		}
+		
+		@Override
+		public void drawFilledCircle(Color color, Vec2 center, float radius) {
+			drawCircle(color, center, radius, true );			
+		}
+		@Override
+		public void drawPolygon(Color color , FloatPolygon polygon) 
+		{
+			g.setColor(color);
+			g.drawPolygon( toPolygon( polygon ) );			
+		}
+		
+		@Override
+		public void drawFilledPolygon(Color color , FloatPolygon polygon) 
+		{
+			g.setColor(color);
+			g.fillPolygon( toPolygon( polygon ) );
 		}				
 	}
 }

@@ -119,5 +119,15 @@ public final class Vec2
 		this.x += x;
 		this.y += y;
 		return this;
-	}	
+	}
+
+	public void min(float x, float y) {
+		this.x = Math.min( this.x , x );
+		this.y = Math.min( this.y , y );
+	}
+	
+	public void max(float x, float y) {
+		this.x = Math.max( this.x , x );
+		this.y = Math.max( this.y , y );
+	}		
 }

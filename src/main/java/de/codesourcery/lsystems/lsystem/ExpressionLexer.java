@@ -1,15 +1,22 @@
 package de.codesourcery.lsystems.lsystem;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import de.codesourcery.lsystems.Main;
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 
-public class ExpressionLexer 
+public class ExpressionLexer implements TokenStream
 {
+	private static boolean DEBUG=false;
+	
 	private final List<Token> tokens = new ArrayList<>();
 	
 	private final Scanner scanner;
+	private final StringBuilder buffer = new StringBuilder();
+
+	private String input;
 	
 	public static TokenSeq parse(String s) {
 		ExpressionLexer lexer = new ExpressionLexer(s);
@@ -36,11 +43,15 @@ public class ExpressionLexer
 		}
 		
 		public char peek() {
+			if ( eof() ) {
+				throw new IllegalStateException("Already at EOF");
+			}
 			return currentSymbol;
 		}
 		
 		public char next() {
-			char c = s.charAt(index++);
+			char c = currentSymbol;
+			index++;
 			if ( index < s.length() ) {
 				currentSymbol = s.charAt(index);
 			}
@@ -62,6 +73,10 @@ public class ExpressionLexer
 	
 	public ExpressionLexer(String s) 
 	{
+		if ( DEBUG) {
+			System.out.println("PARSING >"+s+"<");
+		}
+		this.input=s;
 		this.scanner = new Scanner(s);
 	}
 	
@@ -84,7 +99,11 @@ public class ExpressionLexer
 			return;
 		}		
 		
-		switch( scanner.next() ) 
+		// careful , the cases in this switch need to be in line with the switch in parseToken()
+		if ( DEBUG ) {
+			System.out.println("Peek(): "+scanner.peek());
+		}
+		switch( scanner.peek() ) 
 		{
 			case '[':
 				tokens.add( parseToken(TokenType.PUSH_STATE ) );
@@ -97,12 +116,16 @@ public class ExpressionLexer
 				break;
 			case 'b':
 				tokens.add( parseToken(TokenType.COLOR_BLUE) );			
+				break;
 			case 'r':
 				tokens.add( parseToken(TokenType.COLOR_RED ) );
 				break;		
 			case 'c':
 				tokens.add( parseToken(TokenType.DRAW_CIRCLE ) );
 				break;	
+			case 'C':
+				tokens.add( parseToken(TokenType.DRAW_FILLED_CIRCLE ) );
+				break;					
 			case 'f':
 				tokens.add( parseToken(TokenType.FORWARD_NODRAW ) );
 				break;
@@ -116,18 +139,54 @@ public class ExpressionLexer
 				tokens.add( parseToken(TokenType.ROTATE_RIGHT) );
 				break;		
 			default:
-				throw new RuntimeException("Parse error, invalid character '"+scanner.peek()+"' at index "+ ( scanner.getOffset()-1 ));
+				tokens.add( parseToken(TokenType.CHARACTERS) );
+				break;
+		}
+	}
+	
+	private boolean isKnownSymbol(char c) 
+	{
+		// careful , the cases in this switch need to be in line with the switch in parseTokens()
+		switch(c) 
+		{
+			case '[':
+			case ']':
+			case 'g':
+			case 'b':
+			case 'r':
+			case 'c':
+			case 'C':
+			case 'f':
+			case 'F':
+			case '+':
+			case '-':
+				return true;
+			default:
+				return false;
 		}
 	}
 
 	private Token parseToken(TokenType tokenType) 
 	{
-		if ( tokenType.supportsParameters() && scanner.peek() == '(' ) 
+		final String literal;
+		if ( TokenType.CHARACTERS.equals(tokenType) ) 
+		{
+			buffer.setLength( 0 );			
+			while ( ! scanner.eof() && ! isKnownSymbol( scanner.peek() ) ) {
+				buffer.append( scanner.next() );
+			}
+			literal = buffer.toString();
+		} else {
+			literal = Character.toString( scanner.next() );
+		}
+		
+		List<String> params = null;
+		if ( !scanner.eof() && tokenType.supportsParameters() && scanner.peek() == '(' ) 
 		{
 			final int argListOffset = scanner.getOffset();
 			scanner.next('(');
 			
-			final List<String> params = new ArrayList<>();
+			params = new ArrayList<>();
 			final StringBuilder currentParam = new StringBuilder();
 			while ( ! scanner.eof() && scanner.peek() != ')' ) 
 			{
@@ -157,9 +216,12 @@ public class ExpressionLexer
 				throw new RuntimeException("Argument at index "+argListOffset+" has wrong parameter count "+params.size()+" , needs to be ["+
 						tokenType.getMinParameterCount()+","+tokenType.getMaxParameterCount()+"]");
 			}
-			return new Token(tokenType, params );
 		}
-		return new Token(tokenType);
+		Token result = new Token(tokenType,literal , params );
+		if ( DEBUG ) { 
+			System.out.println(">> "+result+" (type:"+tokenType+")");
+		}
+		return result;
 	}
 	
 	public Token next() 
@@ -176,5 +238,27 @@ public class ExpressionLexer
 			throw new IllegalStateException("Already at EOF");
 		}
 		return tokens.get(0);
+	}
+
+	@Override
+	public Iterator<Token> iterator() 
+	{
+		return new Iterator<Token>() {
+
+			@Override
+			public boolean hasNext() {
+				return ! eof();
+			}
+
+			@Override
+			public Token next() {
+				return next();
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException("remove()");
+			}
+		};
 	}
 }

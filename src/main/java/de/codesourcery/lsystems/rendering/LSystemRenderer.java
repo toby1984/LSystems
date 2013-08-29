@@ -32,4 +32,6 @@ public interface LSystemRenderer
 	 * @param context
 	 */
 	public void render(LSystem system,RenderingContext2D context);
+	
+	public void setTokenTranslator(TokenTranslator translator);
 }

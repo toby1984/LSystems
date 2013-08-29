@@ -25,28 +25,59 @@ public final class SimpleRule implements RewritingRule {
 
 	private final TokenType expected;
 	private final TokenSeq replacement;
+	private final String name;
+	private final String expectedValue;
 	
 	public SimpleRule(TokenType expected,TokenSeq replacement) 
 	{
+		this(null,expected,replacement );
+	}
+	
+	public SimpleRule(TokenType expected,String expectedValue,TokenSeq replacement) 
+	{
+		this(null,expected,expectedValue,replacement );
+	}	
+	
+	public SimpleRule(String name , TokenType expected,TokenSeq replacement) 
+	{
+		this.name = name;
 		this.expected = expected;
 		this.replacement = replacement;
+		expectedValue = null;
 	}
+	
+	public SimpleRule(String name , TokenType expected,String expectedValue,TokenSeq replacement) 
+	{
+		this.name = name;
+		this.expectedValue = expectedValue;
+		this.expected = expected;
+		this.replacement = replacement;
+	}	
 	
 	@Override
 	public boolean matches(RewritingContext context,ParameterProvider provider) 
 	{
+		if ( expectedValue != null ) 
+		{
+			return context.peek().value.equals( expectedValue );
+		}
 		return context.peek(expected);
 	}
 
 	@Override
 	public void rewrite(RewritingContext context,ParameterProvider provider) 
 	{
-		context.next(expected);
+		context.next();
 		context.write( replacement );
 	}
 	
 	@Override
 	public String toString() {
 		return expected+" -> "+replacement;
+	}
+
+	@Override
+	public String getName() {
+		return name;
 	}
 }

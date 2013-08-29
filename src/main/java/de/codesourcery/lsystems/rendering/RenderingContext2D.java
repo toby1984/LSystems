@@ -16,6 +16,9 @@
 package de.codesourcery.lsystems.rendering;
 
 import java.awt.Color;
+import java.awt.Point;
+
+import de.codesourcery.lsystems.rendering.Turtle2D.FloatPolygon;
 
 /**
  * A rendering context provides implementations for 
@@ -41,5 +44,27 @@ public interface RenderingContext2D
 	 * @param center
 	 * @param radius
 	 */
-	void drawCircle( Color color , Vec2 center, float radius);			
+	void drawCircle( Color color , Vec2 center, float radius);		
+	
+	/**
+	 * Draws a filled circle with a specific color and radius.
+	 * 
+	 * @param color
+	 * @param center
+	 * @param radius
+	 */
+	void drawFilledCircle( Color color , Vec2 center, float radius);		
+	
+	/**
+	 * Converts a point in model coordinates to screen coordinates.
+	 * 
+	 * @param modelX
+	 * @param modelY
+	 * @param point
+	 */
+	public void toScreenCoordinates(float modelX,float modelY,Point point);
+	
+	public void drawPolygon(Color color,FloatPolygon polygon);
+	
+	public void drawFilledPolygon(Color color,FloatPolygon polygon);	
 }

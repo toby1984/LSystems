@@ -3,6 +3,7 @@ package de.codesourcery.lsystems.lsystem;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public abstract class TokenSeq {
@@ -85,4 +86,50 @@ public abstract class TokenSeq {
 	public abstract String getAsString(ParameterProvider provider,boolean resolvePlaceholders);
 
 	public abstract List<Token> toList();
+	
+	public static final class TokenWrapper implements TokenStream {
+
+		private final List<Token> list;
+		private final Iterator<Token> it;
+		private Token current;
+		
+		public TokenWrapper(List<Token> list) 
+		{
+			this.list = list;
+			this.it = list.iterator();
+			current= it.hasNext() ? it.next() : null;
+		}
+		
+		@Override
+		public boolean eof() {
+			return current == null;
+		}
+
+		@Override
+		public Token next() 
+		{
+			Token result = current;
+			current = it.hasNext() ? it.next() : null;
+			return result;
+		}
+
+		@Override
+		public Token peek() {
+			return current;
+		}
+
+		@Override
+		public Iterator<Token> iterator() {
+			return list.iterator();
+		}
+	}	
+	
+	public static final TokenStream toTokenStream(List<Token> list) 
+	{
+		return new TokenWrapper( list );
+	}	
+	
+	public final TokenStream toTokenStream() {
+		return new TokenWrapper( toList() );
+	}
 }

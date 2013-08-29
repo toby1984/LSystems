@@ -23,6 +23,12 @@ package de.codesourcery.lsystems.lsystem;
 public interface RewritingRule 
 {
 	/**
+	 * Returns this rule's name (for debugging purposes only).
+	 * @return name,may be <code>null</code>
+	 */
+	public String getName();
+	
+	/**
 	 * Returns whether this rule matches.
 	 * 
 	 * @param context
