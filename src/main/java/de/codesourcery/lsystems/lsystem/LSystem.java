@@ -15,10 +15,7 @@
  */
 package de.codesourcery.lsystems.lsystem;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 
@@ -32,28 +29,21 @@ public class LSystem
 	private final TokenSeq axiom;
 	public List<Token> state;
 	private final List<RewritingRule> rules = new ArrayList<>();
-	private int recursionCount=0;
+	public int recursionCount=0;
 	
-	private final ParameterProvider parameterProvider;
-	
+	private ParameterProvider parameterProvider = new ParameterProvider() {
+        @Override
+        public String getParameter(Token token, String identifier) {
+            return null;
+        }
+    };
+
 	public LSystem(TokenSeq axiom) 
-	{
-		this(axiom, new ParameterProvider() {
-			
-			@Override
-			public String getParameter(Token token, String identifier) {
-				throw new UnsupportedOperationException("Not implemented (parameter: "+identifier+")");
-			}
-		});
-	}
-	
-	public LSystem(TokenSeq axiom,ParameterProvider provider) 
 	{
 		this.axiom = axiom;
 		this.state = new ArrayList<>( axiom.toList() );
-		this.parameterProvider = provider;
-	}	
-	
+    }
+
 	public ParameterProvider getParameterProvider() {
 		return parameterProvider;
 	}
@@ -95,10 +85,9 @@ public class LSystem
 			throw new IllegalArgumentException("rule must not be null");
 		}
 		rules.add(rule);
-		if ( moreRules != null ) {
-			for ( RewritingRule r : moreRules ) {
-				rules.add(r);
-			}
+		if ( moreRules != null )
+        {
+            Collections.addAll(rules,moreRules);
 		}
 		return this;
 	}	
@@ -112,7 +101,21 @@ public class LSystem
 	public final int getRecursionCount() {
 		return recursionCount;
 	}
-	
+
+    /**
+     * Transforms this L-System by applying all matching rules.
+     *
+     * <p>This method performs one recursion, incrementing this system's recursion counter by one.</p>
+     *
+     * @see #getRecursionCount()
+     */
+    public final void rewrite(int recursionCount)
+    {
+        for ( int i = recursionCount ; i > 0 ; i-- ) {
+            rewrite();
+        }
+    }
+
 	/**
 	 * Transforms this L-System by applying all matching rules.
 	 * 
@@ -120,7 +123,7 @@ public class LSystem
 	 * 
 	 * @see #getRecursionCount()
 	 */
-	public final void rewrite() 
+	public final void rewrite()
 	{
 		final MyContext ctx = new MyContext( this.state );
 outer:		
@@ -138,8 +141,12 @@ outer:
 		this.state = ctx.buffer;
 		recursionCount++;
 	}
-	
-	protected final class MyContext implements RewritingContext 
+
+    public void setParameterProvider(ParameterProvider provider) {
+        this.parameterProvider = provider;
+    }
+
+    protected final class MyContext implements RewritingContext
 	{
 		private List<Token> lexer;
 		private int index=0;

@@ -14,5 +14,5 @@ public enum PrimitiveType
 	FORWARD_NODRAW,
 	ROTATE_LEFT,
 	ROTATE_RIGHT, 
-	CUSTOM_1;
+	CUSTOM_1
 }

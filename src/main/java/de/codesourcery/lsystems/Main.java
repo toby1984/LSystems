@@ -23,12 +23,13 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.event.KeyAdapter;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.LSystem;
@@ -52,8 +53,9 @@ import de.codesourcery.lsystems.rendering.Vec2;
 public class Main extends RuleGenerator
 {
 	public static final boolean DEBUG = false;
-	
-	private static long seed = 0xdeadbeef;
+    public static final int RECURSION_COUNT = 10;
+
+    private static long seed = 0xdeadbeef;
 	
 	private final TokenTranslator myTranslator = new DefaultTokenTranslator() {
 		
@@ -64,7 +66,7 @@ public class Main extends RuleGenerator
 	};	
 	
 	public static void main(String[] args) {
-		new Main().run(args);
+        new Main().run(args);
 	}
 	
 	protected void run(String[] args) 
@@ -82,33 +84,17 @@ public class Main extends RuleGenerator
 		frame.getContentPane().add( panel , BorderLayout.CENTER );
 		frame.pack();
 		frame.setVisible( true );
-		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame.setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
 		panel.requestFocus();		
 	}
 	
 	protected static LSystem createLSystem(final Random random) 
 	{
 		final LSystem lSystem;
-		final ParameterProvider provider = new ParameterProvider() 
-		{
-			@Override
-			public String getParameter(Token token, String identifier) 
-			{
-				switch(identifier) 
-				{
-				case "bigAngle":
-					return "15";
-				case "smallAngle":
-					return "7";
-				default:
-					throw new NoSuchElementException("Unknown parameter '"+identifier+"' in token "+token);
-				}
-			}
-		};
-		
+
 		final TokenSeq parsed = ExpressionLexer.parse( "F" );
 		
-		lSystem = new LSystem( parsed , provider ) 
+		lSystem = new LSystem( parsed )
 		{
 			@Override
 			protected void resetHook() 
@@ -116,14 +102,38 @@ public class Main extends RuleGenerator
 				random.setSeed( seed );
 			}
 		};
-		
-		final RewritingRule[] rules = {
-				replaceRule( "F", "b[+(12.5)F]F[-(12.5)F]F" ),
-				replaceRule( "F", "bG[+(12.5)G]G[-(12.5)G]G" ),
-				replaceRule( "G", "rCb" ),				
+
+        final ParameterProvider provider = new ParameterProvider()
+        {
+            @Override
+            public String getParameter(Token token, String identifier)
+            {
+                switch(identifier)
+                {
+                    case "angle":
+                        return Float.toString( 90 / (float) lSystem.recursionCount );
+                    case "len":
+                        return Float.toString( 10 / (float) lSystem.recursionCount );
+                    case "bigAngle":
+                        return "15";
+                    case "smallAngle":
+                        return "7";
+                    default:
+                        throw new NoSuchElementException("Unknown parameter '"+identifier+"' in token "+token);
+                }
+            }
+        };
+        lSystem.setParameterProvider( provider );
+
+        final RewritingRule[] rules = {
+                replaceRule("F", "F(${len})[+(${angle})F(${len})]"),
+                replaceRule("F", "F(${len})[-(${angle})F(${len})]"),
+                replaceRule( "F", "F(${len})[+F(${len})]" ),
+                replaceRule( "F", "F(${len})[-F(${len})]" )
+
 		}; 
 		
-		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules , new float[]{0.6f,0.3f,0.1f} )
+		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules , new float[]{0.25f,0.25f,.25f,.25f} )
 		{
 			@Override
 			protected float getRandomNumber() {
@@ -174,13 +184,9 @@ public class Main extends RuleGenerator
 			final float alphaInDegrees = 15f;
 			
 			lSystem.reset();
-			
-			int recursion = 1;
-			for ( ; recursion < 9 ; recursion++) 
-			{
-				lSystem.rewrite();
-				// System.out.println("STATE: "+lSystem.state);
-			}
+
+            lSystem.rewrite(RECURSION_COUNT);
+
 			render( lSystem , alphaInDegrees ,g );
 		}
 		

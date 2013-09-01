@@ -63,6 +63,9 @@ public final class Token
 		{
 			final String paramName = m.group(1);
 			final String value = provider.getParameter( this , paramName );
+            if ( value == null ) {
+                throw new RuntimeException("Internal error, got no value to substitute placeholder ${"+paramName+"}");
+            }
 			result = result.replaceAll( "\\$\\{"+paramName+"\\}" , value );
 			m = PARAMETER_EXPR.matcher( result );
 		} 

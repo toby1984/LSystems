@@ -252,7 +252,7 @@ public class ExpressionLexer implements TokenStream
 
 			@Override
 			public Token next() {
-				return next();
+				return ExpressionLexer.this.next();
 			}
 
 			@Override

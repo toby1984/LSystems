@@ -26,7 +26,7 @@ import java.util.Stack;
  */
 public final class TurtleStack {
 
-	private final Stack<TurtleStackEntry2D> stack = new Stack<TurtleStackEntry2D>();
+	private final Stack<TurtleStackEntry2D> stack = new Stack<>();
 	
 	/**
 	 * Pushes the turtle's current state onto the stack.

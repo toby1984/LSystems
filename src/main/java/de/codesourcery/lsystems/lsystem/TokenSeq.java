@@ -124,7 +124,7 @@ public abstract class TokenSeq {
 		}
 	}	
 	
-	public static final TokenStream toTokenStream(List<Token> list) 
+	public static TokenStream toTokenStream(List<Token> list)
 	{
 		return new TokenWrapper( list );
 	}	
