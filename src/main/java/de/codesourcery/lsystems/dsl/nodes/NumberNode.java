@@ -36,9 +36,10 @@ public class NumberNode extends ASTNode implements TermNode {
         final ParsedToken tok = context.next(ParsedTokenType.NUMBER);
         String value = tok.value;
         if ( ! context.eof() && context.peek(ParsedTokenType.DOT ) ) {
-            value += "."+context.next( ParsedTokenType.NUMBER );
+            context.next();
+            value += "."+context.next( ParsedTokenType.NUMBER ).value;
         }
-        this.value = Float.parseFloat( value );
+        this.value = Double.parseDouble( value );
         return this;
     }
 
@@ -50,6 +51,11 @@ public class NumberNode extends ASTNode implements TermNode {
     @Override
     public double evaluate(ExpressionContext context) {
         return value;
+    }
+
+    @Override
+    public ASTNode reduce(ExpressionContext context) {
+        return this;
     }
 
     @Override

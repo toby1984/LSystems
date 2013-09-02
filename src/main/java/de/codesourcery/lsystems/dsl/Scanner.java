@@ -29,6 +29,14 @@ public class Scanner {
         return currentIndex >= input.length();
     }
 
+    public void pushBack() {
+        if ( currentIndex == 0 ) {
+            throw new IllegalStateException("Already at the beginning");
+        }
+        currentIndex--;
+        currentSymbol = input.charAt(currentIndex);
+    }
+
     public char peek() {
         if ( eof() ) {
             throw new IllegalStateException("At EOF");

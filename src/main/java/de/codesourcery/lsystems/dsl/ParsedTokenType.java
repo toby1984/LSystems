@@ -17,5 +17,6 @@ public enum ParsedTokenType {
     UNPARSED,
     PARENS_OPEN,
     PARENS_CLOSE,
-    AXIOM
+    ARROW, // ->
+    AXIOM, // AXIOM
 }

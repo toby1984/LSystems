@@ -22,10 +22,15 @@ public class ExpressionNode extends ASTNode implements  TermNode
     @Override
     public double evaluate(ExpressionContext context)
     {
-        if ( children.isEmpty() ) {
+        if ( ! hasChildren() ) {
             return 0;
         }
         return ((TermNode) child(0)).evaluate(context);
+    }
+
+    @Override
+    public ASTNode reduce(ExpressionContext context) {
+        return hasChildren() ? ((TermNode) child(0)).reduce(context) : this;
     }
 
     public static enum Operator {
@@ -34,11 +39,35 @@ public class ExpressionNode extends ASTNode implements  TermNode
             public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
                 return ((TermNode) operatorNode.child(0)).evaluate(context) + ((TermNode) operatorNode.child(1)).evaluate(context);
             }
+
+            @Override
+            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            {
+                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
+                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
+                    return new NumberNode( ((NumberNode) value1).value + ((NumberNode) value2).value );
+                }
+                return operatorNode;
+            }
         },
         MINUS('-', 1) {
             @Override
             public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
                 return ((TermNode) operatorNode.child(0)).evaluate(context) - ((TermNode) operatorNode.child(1)).evaluate(context);
+            }
+
+            @Override
+            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            {
+                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
+                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
+                    return new NumberNode( ((NumberNode) value1).value - ((NumberNode) value2).value );
+                }
+                return operatorNode;
             }
         },
         TIMES('*', 2) {
@@ -46,11 +75,35 @@ public class ExpressionNode extends ASTNode implements  TermNode
             public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
                 return ((TermNode) operatorNode.child(0)).evaluate(context) * ((TermNode) operatorNode.child(1)).evaluate(context);
             }
+
+            @Override
+            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            {
+                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
+                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
+                    return new NumberNode( ((NumberNode) value1).value * ((NumberNode) value2).value );
+                }
+                return operatorNode;
+            }
         },
         DIVIDE('/', 2) {
             @Override
             public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
                 return ((TermNode) operatorNode.child(0)).evaluate(context) / ((TermNode) operatorNode.child(1)).evaluate(context);
+            }
+
+            @Override
+            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            {
+                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
+                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
+                    return new NumberNode( ((NumberNode) value1).value / ((NumberNode) value2).value );
+                }
+                return operatorNode;
             }
         },
         PARENS('(', 100) {
@@ -74,10 +127,15 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 if ( ! node.hasChildren() ) {
                     return "( ? )";
                 }
-                if ( node.children.size() == 1 ) {
-                    return "( "+node.child(0).toString()+" )";
+                if (node.getChildren().size() == 1) {
+                    return "( " + node.child(0).toString() + " )";
                 }
                 return "( "+node.child(0)+" ) [ ... more children? ... ]";
+            }
+
+            @Override
+            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context) {
+                throw new UnsupportedOperationException("cannot reduce parens");
             }
         };
 
@@ -98,10 +156,10 @@ public class ExpressionNode extends ASTNode implements  TermNode
             if ( ! node.hasChildren() ) {
                 return "? " +symbol+" ?";
             }
-            if ( node.children.size() == 1 ) {
+            if ( node.getChildren().size() == 1 ) {
                 return node.child(0).toString()+symbol+" ?";
             }
-            if ( node.children.size() == 2 ) {
+            if ( node.getChildren().size() == 2 ) {
                 return node.child(0).toString()+ symbol + node.child(1).toString();
             }
             return node.child(0).toString() + symbol + node.child(1).toString() + " [ ... more children? ... ]";
@@ -138,6 +196,8 @@ public class ExpressionNode extends ASTNode implements  TermNode
         }
 
         public abstract double evaluate(OperatorNode operatorNode,ExpressionContext context);
+
+        public abstract ASTNode reduce(OperatorNode operatorNode, ExpressionContext context);
     }
 
     @Override
@@ -264,7 +324,6 @@ public class ExpressionNode extends ASTNode implements  TermNode
             throw new IllegalStateException("Parens still on operator stack?");
         }
         final Operator op = operators.pop();
-        System.out.println("POP: "+op);
         OperatorNode newNode = new OperatorNode(op);
         for ( int i = 0 ; i < op.getArgumentCount() ; i++ ) {
             if ( values.isEmpty() ) {

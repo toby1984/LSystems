@@ -42,4 +42,13 @@ public class IdentifierNode extends ASTNode implements TermNode
         }
         throw new RuntimeException("Don't know how to evaluate "+value);
     }
+
+    @Override
+    public ASTNode reduce(ExpressionContext context) {
+        ASTNode value = context.lookup(this.value);
+        if ( value instanceof TermNode) {
+            return ((TermNode) value).reduce( context );
+        }
+        return this;
+    }
 }

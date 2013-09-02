@@ -10,4 +10,6 @@ package de.codesourcery.lsystems.dsl.nodes;
 public interface TermNode
 {
     double evaluate(ExpressionContext context);
+
+    ASTNode reduce(ExpressionContext context);
 }

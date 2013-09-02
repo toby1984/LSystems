@@ -1,11 +1,16 @@
 package de.codesourcery.lsystems.dsl;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.TableModel;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
@@ -79,6 +84,13 @@ public class DSLLexer {
                     addUnparsed(offset);
                     tokens.add(new ParsedToken(ParsedTokenType.PARENS_CLOSE, scanner.next(), scanner.currentOffset()));
                     return;
+                case '-':
+                    scanner.next();
+                    if ( scanner.peek() == '>' ) { // found '->'
+                        tokens.add(new ParsedToken(ParsedTokenType.ARROW, "->", scanner.currentOffset()-1 ) );
+                        return;
+                    }
+                    scanner.pushBack();
                 case '.':
                     addUnparsed(offset);
                     tokens.add(new ParsedToken(ParsedTokenType.DOT, scanner.next(), scanner.currentOffset()));
@@ -120,9 +132,10 @@ public class DSLLexer {
         }
     }
 
-    public static void main(String[] args) {
-        AST ast = new Parser().parse("(1+2*a)/3");
-        System.out.println( "PARSED: "+ast.toString() );
+    public static void main(String[] args)
+    {
+        final String expression = "1.5*2";
+        final AST ast = new Parser().parse( expression );
 
         final Map<Identifier,Double> variables = new HashMap<>();
         variables.put(new Identifier("a"), 4.0d );
@@ -140,17 +153,103 @@ public class DSLLexer {
             }
         };
 
-        System.out.println("EVALUATED: " + ((TermNode) ast.child(0)).evaluate(context));
+        final ExpressionNode expr = (ExpressionNode) ast.child(0);
 
         final JFrame frame = new JFrame();
 
-        final JTree tree=new JTree(new NodeWrapper( ast ) );
+        final JTree tree=new JTree(new NodeWrapper( expr.reduce( context ) ) );
         tree.setRootVisible(true);
 
-        final  JScrollPane pane=new JScrollPane( tree );
+        final  JPanel panel = new JPanel();
+        panel.setLayout( new GridBagLayout() );
 
+        // add text area
+        final JTextArea textArea = new JTextArea( expression );
+        textArea.setColumns(25);
+        textArea.setRows(5);
+
+        GridBagConstraints cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 0.9;
+        cnstrs.weighty = 0;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=2;
+        cnstrs.gridx = 0;
+        cnstrs.gridy = 0;
+        panel.add( textArea , cnstrs );
+
+        // add parse button
+        final JButton parseButton = new JButton("Parse");
+        parseButton.addActionListener( new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                try {
+                    AST ast = new Parser().parse(textArea.getText());
+                    tree.setModel( new DefaultTreeModel(new NodeWrapper( ast ) ) );
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 0.1;
+        cnstrs.weighty = 0;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 1;
+        cnstrs.gridy = 0;
+        panel.add( parseButton , cnstrs );
+
+        // add reduce button
+        final JButton reduceButton = new JButton("Reduce");
+        reduceButton.addActionListener( new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                try
+                {
+                    if ( ast.hasChildren() && ast.child(0) instanceof TermNode) {
+                        final ASTNode reduced = ((TermNode) ast.child(0)).reduce(context);
+                        System.out.println("REDUCED: "+reduced);
+                        tree.setModel(new DefaultTreeModel(new NodeWrapper(reduced)));
+                    } else {
+                        System.out.println("Nothing to reduce");
+                    }
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 0.1;
+        cnstrs.weighty = 0;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 1;
+        cnstrs.gridy = 1;
+        panel.add( reduceButton , cnstrs );
+
+        // add parse tree view
+        final  JScrollPane pane=new JScrollPane( tree );
         pane.setPreferredSize(new Dimension(200,200));
-        frame.getContentPane().add( pane );
+
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 1;
+        cnstrs.weighty = 1;
+        cnstrs.fill = GridBagConstraints.BOTH;
+        cnstrs.gridwidth=2;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 0;
+        cnstrs.gridy = 2;
+        panel.add( pane , cnstrs );
+
+        // setup frame
+        frame.getContentPane().add( panel );
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
@@ -176,7 +275,7 @@ public class DSLLexer {
 
 		@Override
 		public int getChildCount() {
-			return node.children.size();
+			return node.getChildren().size();
 		}
 
         @Override
@@ -186,12 +285,12 @@ public class DSLLexer {
 
         @Override
 		public TreeNode getParent() {
-			return node.parent == null ? null : new NodeWrapper( node.parent );
+			return node.hasParent() ? new NodeWrapper( node.getParent() ) : null;
 		}
 
 		@Override
 		public int getIndex(TreeNode node) {
-			return this.node.children.indexOf( ((NodeWrapper) node).node );
+			return this.node.getChildren().indexOf(((NodeWrapper) node).node);
 		}
 
 		@Override
@@ -207,7 +306,7 @@ public class DSLLexer {
 		@Override
 		public Enumeration children()
         {
-            final Iterator<ASTNode> it = node.children.iterator();
+            final Iterator<ASTNode> it = node.getChildren().iterator();
 
             return new Enumeration<Object>(){
 

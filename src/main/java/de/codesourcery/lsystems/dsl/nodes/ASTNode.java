@@ -1,6 +1,8 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
 import de.codesourcery.lsystems.dsl.ParseContext;
+import de.codesourcery.lsystems.dsl.ParsedToken;
+import de.codesourcery.lsystems.dsl.TextRegion;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,15 +17,45 @@ import java.util.List;
  */
 public abstract class ASTNode {
 
-    public ASTNode parent;
-    public final List<ASTNode> children = new ArrayList<>();
+    private ASTNode parent;
+    private final List<ASTNode> children = new ArrayList<>();
+    private TextRegion region;
 
     public void addChild(ASTNode child) {
-        if ( child == null ) {
+        if (child == null) {
             throw new IllegalArgumentException("child must not be NULL");
         }
-        children.add( child );
+        children.add(child);
         child.setParent(this);
+
+        if ( child.getRegion() != null ) {
+            mergeRegion( child.getRegion() );
+        }
+    }
+
+    protected void setTextRegion(TextRegion region)
+    {
+        if ( region == null ) {
+            throw new IllegalArgumentException("region cannot be NULL");
+        }
+        this.region = region;
+    }
+
+    public ASTNode mergeRegion(ParsedToken token) {
+        return mergeRegion( token.region );
+    }
+
+    public ASTNode mergeRegion(TextRegion otherRegion) {
+        if ( otherRegion == null ) {
+            this.region = otherRegion;
+        } else {
+            this.region = this.region.merge( otherRegion );
+        }
+        return this;
+    }
+
+    public TextRegion getRegion() {
+        return region;
     }
 
     public final void reverseChildren() {
@@ -32,6 +64,10 @@ public abstract class ASTNode {
 
     public void setParent(ASTNode parent) {
         this.parent = parent;
+    }
+
+    public List<ASTNode> getChildren() {
+        return children;
     }
 
     public ASTNode child(int index) {
@@ -43,18 +79,22 @@ public abstract class ASTNode {
     }
 
     public boolean hasChildren() {
-        return ! children.isEmpty();
+        return !children.isEmpty();
     }
 
     public abstract ASTNode parse(ParseContext context);
 
     public String toString() {
         final StringBuffer result = new StringBuffer();
-        for ( ASTNode child : children ) {
-            result.append( child.toString() );
+        for (ASTNode child : children) {
+            result.append(child.toString());
         }
         return result.toString();
     }
 
     public abstract String toDebugString();
+
+    public ASTNode getParent() {
+        return parent;
+    }
 }

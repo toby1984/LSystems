@@ -46,6 +46,11 @@ public class OperatorNode extends ASTNode implements TermNode {
         return type.evaluate( this , context );
     }
 
+    @Override
+    public ASTNode reduce(ExpressionContext context) {
+        return type.reduce(this, context);
+    }
+
     public String toDebugString() {
         return "Operator("+Character.toString(type.getSymbol())+")";
     }
