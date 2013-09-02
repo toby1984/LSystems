@@ -17,7 +17,14 @@ public class NumberNode extends ASTNode implements TermNode {
 
     private static final Pattern VALID_NUMBER = Pattern.compile("[0-9]+");
 
-    public float value;
+    public double value;
+
+    public NumberNode() {
+    }
+
+    public NumberNode(double value) {
+        this.value = value;
+    }
 
     public static boolean isValidNumber(String s) {
         return s != null & VALID_NUMBER.matcher(s).matches();
@@ -37,11 +44,16 @@ public class NumberNode extends ASTNode implements TermNode {
 
     @Override
     public String toString() {
-        return Float.toString(value);
+        return Double.toString(value);
     }
 
     @Override
-    public double evaluate() {
+    public double evaluate(ExpressionContext context) {
         return value;
+    }
+
+    @Override
+    public String toDebugString() {
+        return Double.toString( value );
     }
 }

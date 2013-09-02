@@ -1,12 +1,15 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.nodes.AST;
-import de.codesourcery.lsystems.dsl.nodes.NumberNode;
-import de.codesourcery.lsystems.dsl.nodes.OperatorNode;
-import de.codesourcery.lsystems.dsl.nodes.TermNode;
-
-import java.util.ArrayList;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
+
+import javax.swing.*;
+import javax.swing.table.TableModel;
+import javax.swing.tree.TreeNode;
+
+import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
+import de.codesourcery.lsystems.dsl.nodes.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -66,6 +69,7 @@ public class DSLLexer {
         int offset = scanner.currentOffset();
         char c = scanner.peek();
         while (!scanner.eof()) {
+            c = scanner.peek();
             switch (c) {
                 case '(':
                     addUnparsed(offset);
@@ -102,8 +106,10 @@ public class DSLLexer {
         addUnparsed(offset);
     }
 
-    private void addUnparsed(int offset) {
-        if (buffer.length() > 0) {
+    private void addUnparsed(int offset)
+    {
+        if (buffer.length() > 0)
+        {
             final String s = buffer.toString();
             if (Identifier.isValidIdentifier(s)) {
                 tokens.add(new ParsedToken(ParsedTokenType.IDENTIFIER, s, offset));
@@ -115,9 +121,108 @@ public class DSLLexer {
     }
 
     public static void main(String[] args) {
-        AST ast = new Parser().parse("((1+2)*4)/3");
+        AST ast = new Parser().parse("(1+2*a)/3");
         System.out.println( "PARSED: "+ast.toString() );
-        System.out.println("EVALUATED: " + ((TermNode) ast.child(0)).evaluate());
+
+        final Map<Identifier,Double> variables = new HashMap<>();
+        variables.put(new Identifier("a"), 4.0d );
+
+        final ExpressionContext context = new ExpressionContext()
+        {
+            @Override
+            public ASTNode lookup(Identifier identifier) throws UnknownIdentifierException
+            {
+                final Double value = variables.get(identifier);
+                if ( value == null ) {
+                    throw new UnknownIdentifierException(identifier);
+                }
+                return new NumberNode( value );
+            }
+        };
+
+        System.out.println("EVALUATED: " + ((TermNode) ast.child(0)).evaluate(context));
+
+        final JFrame frame = new JFrame();
+
+        final JTree tree=new JTree(new NodeWrapper( ast ) );
+        tree.setRootVisible(true);
+
+        final  JScrollPane pane=new JScrollPane( tree );
+
+        pane.setPreferredSize(new Dimension(200,200));
+        frame.getContentPane().add( pane );
+
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        frame.pack();
+        frame.setVisible( true );
+    }
+    
+    protected static final class NodeWrapper implements TreeNode {
+
+    	private final ASTNode node;
+
+        public NodeWrapper(ASTNode node) {
+            if ( node == null ) {
+                throw new IllegalArgumentException("Node cannot be null");
+            }
+            this.node = node;
+        }
+
+        @Override
+		public TreeNode getChildAt(int childIndex) {
+			return new NodeWrapper( node.child( childIndex ) );
+		}
+
+		@Override
+		public int getChildCount() {
+			return node.children.size();
+		}
+
+        @Override
+        public String toString() {
+            return node.toDebugString();
+        }
+
+        @Override
+		public TreeNode getParent() {
+			return node.parent == null ? null : new NodeWrapper( node.parent );
+		}
+
+		@Override
+		public int getIndex(TreeNode node) {
+			return this.node.children.indexOf( ((NodeWrapper) node).node );
+		}
+
+		@Override
+		public boolean getAllowsChildren() {
+			return true;
+		}
+
+		@Override
+		public boolean isLeaf() {
+			return ! node.hasChildren();
+		}
+
+		@Override
+		public Enumeration children()
+        {
+            final Iterator<ASTNode> it = node.children.iterator();
+
+            return new Enumeration<Object>(){
+
+                @Override
+                public boolean hasMoreElements() {
+                    return it.hasNext();
+                }
+
+                @Override
+                public Object nextElement() {
+                    return it.next();
+                }
+            };
+		}
+    	
     }
 
     public ParsedToken next(ParsedTokenType type) {

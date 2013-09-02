@@ -16,4 +16,9 @@ public class AST extends ASTNode
         addChild( new ExpressionNode().parse( context ) );
         return this;
     }
+
+    @Override
+    public String toDebugString() {
+        return "AST";
+    }
 }

@@ -1,7 +1,6 @@
 package de.codesourcery.lsystems.dsl;
 
 import de.codesourcery.lsystems.dsl.nodes.AST;
-import de.codesourcery.lsystems.dsl.nodes.ExpressionNode;
 
 /**
  * Created with IntelliJ IDEA.
@@ -12,8 +11,9 @@ import de.codesourcery.lsystems.dsl.nodes.ExpressionNode;
  */
 public class Parser {
 
-    public AST parse(String s) {
-        DSLLexer lexer = new DSLLexer(new Scanner(s));
+    public AST parse(String s)
+    {
+        final DSLLexer lexer = new DSLLexer(new Scanner(s));
 
         final ParseContext context = new ParseContext()
         {

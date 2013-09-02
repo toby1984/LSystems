@@ -42,7 +42,11 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public double evaluate() {
-        return type.evaluate( this );
+    public double evaluate(ExpressionContext context) {
+        return type.evaluate( this , context );
+    }
+
+    public String toDebugString() {
+        return "Operator("+Character.toString(type.getSymbol())+")";
     }
 }

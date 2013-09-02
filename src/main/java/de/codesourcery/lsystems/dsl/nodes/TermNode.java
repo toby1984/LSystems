@@ -7,7 +7,7 @@ package de.codesourcery.lsystems.dsl.nodes;
  * Time: 8:40 PM
  * To change this template use File | Settings | File Templates.
  */
-public interface TermNode {
-
-    public double evaluate();
+public interface TermNode
+{
+    double evaluate(ExpressionContext context);
 }

@@ -20,37 +20,37 @@ public class ExpressionNode extends ASTNode implements  TermNode
     private final Stack<Operator> operators = new Stack<>();
 
     @Override
-    public double evaluate()
+    public double evaluate(ExpressionContext context)
     {
         if ( children.isEmpty() ) {
             return 0;
         }
-        return ((TermNode) child(0)).evaluate();
+        return ((TermNode) child(0)).evaluate(context);
     }
 
     public static enum Operator {
         PLUS('+', 1) {
             @Override
-            public double evaluate(OperatorNode operatorNode) {
-                return ((TermNode) operatorNode.child(0)).evaluate() + ((TermNode) operatorNode.child(1)).evaluate();
+            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+                return ((TermNode) operatorNode.child(0)).evaluate(context) + ((TermNode) operatorNode.child(1)).evaluate(context);
             }
         },
         MINUS('-', 1) {
             @Override
-            public double evaluate(OperatorNode operatorNode) {
-                return ((TermNode) operatorNode.child(0)).evaluate() - ((TermNode) operatorNode.child(1)).evaluate();
+            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+                return ((TermNode) operatorNode.child(0)).evaluate(context) - ((TermNode) operatorNode.child(1)).evaluate(context);
             }
         },
         TIMES('*', 2) {
             @Override
-            public double evaluate(OperatorNode operatorNode) {
-                return ((TermNode) operatorNode.child(0)).evaluate() * ((TermNode) operatorNode.child(1)).evaluate();
+            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+                return ((TermNode) operatorNode.child(0)).evaluate(context) * ((TermNode) operatorNode.child(1)).evaluate(context);
             }
         },
         DIVIDE('/', 2) {
             @Override
-            public double evaluate(OperatorNode operatorNode) {
-                return ((TermNode) operatorNode.child(0)).evaluate() / ((TermNode) operatorNode.child(1)).evaluate();
+            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+                return ((TermNode) operatorNode.child(0)).evaluate(context) / ((TermNode) operatorNode.child(1)).evaluate(context);
             }
         },
         PARENS('(', 100) {
@@ -65,8 +65,8 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
 
             @Override
-            public double evaluate(OperatorNode operatorNode) {
-                return ((TermNode) operatorNode.child(0)).evaluate();
+            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+                return ((TermNode) operatorNode.child(0)).evaluate(context);
             }
 
             public String toString(OperatorNode node)
@@ -87,6 +87,10 @@ public class ExpressionNode extends ASTNode implements  TermNode
         private Operator(char symbol, int precedence) {
             this.symbol = symbol;
             this.precedence = precedence;
+        }
+
+        public char getSymbol() {
+            return symbol;
         }
 
         public String toString(OperatorNode node)
@@ -133,7 +137,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return 2;
         }
 
-        public abstract double evaluate(OperatorNode operatorNode);
+        public abstract double evaluate(OperatorNode operatorNode,ExpressionContext context);
     }
 
     @Override
@@ -268,6 +272,13 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
             newNode.addChild( values.pop() );
         }
+        newNode.reverseChildren();
         pushValue(newNode);
+    }
+
+    @Override
+    public String toDebugString()
+    {
+        return "Expression";
     }
 }

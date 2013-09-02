@@ -3,6 +3,7 @@ package de.codesourcery.lsystems.dsl.nodes;
 import de.codesourcery.lsystems.dsl.ParseContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,6 +26,10 @@ public abstract class ASTNode {
         child.setParent(this);
     }
 
+    public final void reverseChildren() {
+        Collections.reverse(children);
+    }
+
     public void setParent(ASTNode parent) {
         this.parent = parent;
     }
@@ -44,11 +49,12 @@ public abstract class ASTNode {
     public abstract ASTNode parse(ParseContext context);
 
     public String toString() {
-
         final StringBuffer result = new StringBuffer();
         for ( ASTNode child : children ) {
             result.append( child.toString() );
         }
         return result.toString();
     }
+
+    public abstract String toDebugString();
 }
