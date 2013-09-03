@@ -3,11 +3,8 @@ package de.codesourcery.lsystems.dsl;
 import de.codesourcery.lsystems.dsl.nodes.AST;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 6:30 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public class Parser {
 

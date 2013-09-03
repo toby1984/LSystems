@@ -1,5 +1,6 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.NumberType;
 import de.codesourcery.lsystems.dsl.ParseContext;
 import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.ParsedTokenType;
@@ -7,17 +8,14 @@ import de.codesourcery.lsystems.dsl.ParsedTokenType;
 import java.util.Stack;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 6:30 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public class ExpressionNode extends ASTNode implements  TermNode
 {
     private final Stack<ASTNode> values = new Stack<>();
 
-    private final Stack<Operator> operators = new Stack<>();
+    private final Stack<OperatorNode> operators = new Stack<>();
 
     @Override
     public double evaluate(ExpressionContext context)
@@ -46,8 +44,9 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
                 ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
-                    return new NumberNode( ((NumberNode) value1).value + ((NumberNode) value2).value );
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode)
+                {
+                    return new NumberNode( ((NumberNode) value1).value + ((NumberNode) value2).value  , inferType( value1 , value2 , context ));
                 }
                 return operatorNode;
             }
@@ -65,7 +64,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
 
                 if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
-                    return new NumberNode( ((NumberNode) value1).value - ((NumberNode) value2).value );
+                    return new NumberNode( ((NumberNode) value1).value - ((NumberNode) value2).value , inferType( value1 , value2 , context ));
                 }
                 return operatorNode;
             }
@@ -83,7 +82,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
 
                 if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
-                    return new NumberNode( ((NumberNode) value1).value * ((NumberNode) value2).value );
+                    return new NumberNode( ((NumberNode) value1).value * ((NumberNode) value2).value  , inferType( value1 , value2 , context ));
                 }
                 return operatorNode;
             }
@@ -100,8 +99,9 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
                 ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
-                    return new NumberNode( ((NumberNode) value1).value / ((NumberNode) value2).value );
+                if ( value1 instanceof NumberNode && value2 instanceof NumberNode)
+                {
+                    return new NumberNode( ((NumberNode) value1).value / ((NumberNode) value2).value  , TermType.FLOATING_POINT );
                 }
                 return operatorNode;
             }
@@ -149,6 +149,39 @@ public class ExpressionNode extends ASTNode implements  TermNode
 
         public char getSymbol() {
             return symbol;
+        }
+
+        /**
+         * Infer type.
+         *
+         * @param n1 node1 , may be <code>null</code>
+         * @param n2 node2 , may be <code>null</code>
+         * @param context
+         * @return
+         */
+        public TermType inferType(ASTNode n1,ASTNode n2,ExpressionContext context)
+        {
+            TermType t1 = null;
+            if ( n1 instanceof TermNode) {
+                t1 = ((TermNode) n1).getType( context );
+            }
+            TermType t2 = null;
+            if ( n2 instanceof TermNode) {
+                t2 = ((TermNode) n2).getType( context );
+            }
+            if ( n1 == null || n2 == null ) {
+                return TermType.UNKNOWN;
+            }
+            if ( t1 == t2 ) {
+                return t1;
+            }
+            if ( t1 == TermType.FLOATING_POINT && t2 == TermType.INTEGER ) {
+                return t1;
+            }
+            if ( t2 == TermType.FLOATING_POINT && t1 == TermType.INTEGER ) {
+                return t2;
+            }
+            throw new RuntimeException("Internal error,failed to infer types for operator " + name() + " and " + t1 + " , " + t2);
         }
 
         public String toString(OperatorNode node)
@@ -266,9 +299,9 @@ public class ExpressionNode extends ASTNode implements  TermNode
         If the token at the top of the stack is a function token, pop it onto the output queue.
         If the stack runs out without finding a left parenthesis, then there are mismatched parentheses.
              */
-            while ( ! operators.isEmpty() ) {
-                Operator top = operators.peek();
-                if ( top == Operator.PARENS ) {
+            while ( ! operators.isEmpty() )
+            {
+                if ( operators.peek().hasType( Operator.PARENS ) ) {
                     break;
                 }
                 popOperator(context);
@@ -281,12 +314,12 @@ public class ExpressionNode extends ASTNode implements  TermNode
 
         if (operators.isEmpty())
         {
-            operators.push(o1);
+            operators.push( new OperatorNode(o1,tok) );
             return;
         }
 
         if ( o1 == Operator.PARENS ) {
-            operators.push(o1);
+            operators.push(new OperatorNode(o1,tok) );
             return;
         }
 
@@ -302,7 +335,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
          */
         while (!operators.isEmpty())
         {
-            Operator o2 = operators.peek();
+            Operator o2 = operators.peek().type;
             if ( (o1.isLeftAssociative() && (o1.getPrecedence() == o2.getPrecedence())) ||
                  ( o1.getPrecedence() < o2.getPrecedence() && o2 != Operator.PARENS ) )
             {
@@ -311,7 +344,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 break;
             }
         }
-        operators.push(o1);
+        operators.push( new OperatorNode(o1,tok) );
     }
 
     private void popOperator(ParseContext context)
@@ -320,14 +353,13 @@ public class ExpressionNode extends ASTNode implements  TermNode
             throw new IllegalStateException("Empty operator stack?");
         }
 
-        if ( operators.peek() == Operator.PARENS ) {
+        if ( operators.peek().hasType( Operator.PARENS ) ) {
             throw new IllegalStateException("Parens still on operator stack?");
         }
-        final Operator op = operators.pop();
-        OperatorNode newNode = new OperatorNode(op);
-        for ( int i = 0 ; i < op.getArgumentCount() ; i++ ) {
+        final OperatorNode newNode = operators.pop();
+        for ( int i = 0 ; i < newNode.type.getArgumentCount() ; i++ ) {
             if ( values.isEmpty() ) {
-                context.fail("Too few arguments for operator "+op);
+                context.fail("Too few arguments for operator "+newNode.type);
             }
             newNode.addChild( values.pop() );
         }
@@ -338,6 +370,19 @@ public class ExpressionNode extends ASTNode implements  TermNode
     @Override
     public String toDebugString()
     {
-        return "Expression";
+        return "Expression "+getRegion();
+    }
+
+    @Override
+    public TermType getType(ExpressionContext context)
+    {
+        if ( ! hasChildren() ) {
+            return TermType.VOID;
+        }
+        ASTNode reduced = reduce( context );
+        if ( reduced != this && reduced instanceof TermNode ) {
+            return ((TermNode) reduced).getType( context );
+        }
+        return TermType.UNKNOWN;
     }
 }

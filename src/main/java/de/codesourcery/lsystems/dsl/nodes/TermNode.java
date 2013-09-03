@@ -1,15 +1,20 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 8:40 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public interface TermNode
 {
+    public static enum TermType {
+        INTEGER,
+        FLOATING_POINT,
+        VOID, UNKNOWN
+    }
+
     double evaluate(ExpressionContext context);
 
     ASTNode reduce(ExpressionContext context);
+
+    public TermType getType(ExpressionContext context);
 }

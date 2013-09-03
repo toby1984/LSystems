@@ -9,17 +9,25 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 6:27 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public abstract class ASTNode {
 
     private ASTNode parent;
     private final List<ASTNode> children = new ArrayList<>();
     private TextRegion region;
+
+    protected ASTNode() {
+    }
+
+    protected ASTNode(TextRegion region) {
+        setTextRegion( region );
+    }
+
+    protected ASTNode(ParsedToken token) {
+        setTextRegion( token.region );
+    }
 
     public void addChild(ASTNode child) {
         if (child == null) {
@@ -41,12 +49,13 @@ public abstract class ASTNode {
         this.region = region;
     }
 
-    public ASTNode mergeRegion(ParsedToken token) {
-        return mergeRegion( token.region );
+    public ParsedToken mergeRegion(ParsedToken token) {
+        mergeRegion( token.region );
+        return token;
     }
 
     public ASTNode mergeRegion(TextRegion otherRegion) {
-        if ( otherRegion == null ) {
+        if ( this.region == null ) {
             this.region = otherRegion;
         } else {
             this.region = this.region.merge( otherRegion );

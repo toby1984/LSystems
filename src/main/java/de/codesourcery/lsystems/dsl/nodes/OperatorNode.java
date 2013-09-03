@@ -1,19 +1,18 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
 import de.codesourcery.lsystems.dsl.ParseContext;
+import de.codesourcery.lsystems.dsl.ParsedToken;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 6:56 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public class OperatorNode extends ASTNode implements TermNode {
 
     public ExpressionNode.Operator type;
 
-    public OperatorNode(ExpressionNode.Operator op) {
+    public OperatorNode(ExpressionNode.Operator op,ParsedToken token) {
+        super(token);
         this.type = op;
     }
 
@@ -27,6 +26,10 @@ public class OperatorNode extends ASTNode implements TermNode {
             default:
                 return false;
         }
+    }
+
+    public boolean hasType(ExpressionNode.Operator expected) {
+        return expected.equals( this.type );
     }
 
     @Override
@@ -51,7 +54,18 @@ public class OperatorNode extends ASTNode implements TermNode {
         return type.reduce(this, context);
     }
 
+    @Override
+    public TermType getType(ExpressionContext context)
+    {
+        if ( getChildren().size() == 2 ) {
+            return this.type.inferType( child(0) , child(1) , context );
+        } else if ( getChildren().size() == 1 ) {
+            return this.type.inferType( child(0) , null , context );
+        }
+        throw new RuntimeException("Internal error, cannot infer types for operator with "+getChildren().size()+" arguments ?");
+    }
+
     public String toDebugString() {
-        return "Operator("+Character.toString(type.getSymbol())+")";
+        return "Operator("+Character.toString(type.getSymbol())+") "+getRegion();
     }
 }

@@ -7,23 +7,28 @@ import de.codesourcery.lsystems.dsl.ParsedTokenType;
 import java.util.regex.Pattern;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/1/13
- * Time: 6:44 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
 public class NumberNode extends ASTNode implements TermNode {
 
     private static final Pattern VALID_NUMBER = Pattern.compile("[0-9]+");
 
     public double value;
+    public boolean hadDecimalPoint;
 
     public NumberNode() {
     }
 
-    public NumberNode(double value) {
+    public NumberNode(double value,TermType type) {
         this.value = value;
+        if ( type == TermType.INTEGER ) {
+            this.hadDecimalPoint = false;
+        } else if ( type == TermType.FLOATING_POINT ) {
+            this.hadDecimalPoint = true;
+        } else {
+            throw new IllegalArgumentException("Unhandled numeric type: "+type);
+        }
     }
 
     public static boolean isValidNumber(String s) {
@@ -33,13 +38,15 @@ public class NumberNode extends ASTNode implements TermNode {
     @Override
     public ASTNode parse(ParseContext context)
     {
-        final ParsedToken tok = context.next(ParsedTokenType.NUMBER);
+        final ParsedToken tok = mergeRegion(context.next(ParsedTokenType.NUMBER));
+
         String value = tok.value;
-        if ( ! context.eof() && context.peek(ParsedTokenType.DOT ) ) {
-            context.next();
-            value += "."+context.next( ParsedTokenType.NUMBER ).value;
+        if (!context.eof() && context.peek(ParsedTokenType.DOT)) {
+            mergeRegion(context.next());
+            value += "." + mergeRegion(context.next(ParsedTokenType.NUMBER) ).value;
+            this.hadDecimalPoint = true;
         }
-        this.value = Double.parseDouble( value );
+        this.value = Double.parseDouble(value);
         return this;
     }
 
@@ -59,7 +66,16 @@ public class NumberNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public String toDebugString() {
-        return Double.toString( value );
+    public TermType getType(ExpressionContext context) {
+        return hadDecimalPoint ? TermType.FLOATING_POINT : TermType.INTEGER;
+    }
+
+    @Override
+    public String toDebugString()
+    {
+        if ( !hadDecimalPoint) {
+            return Double.toString(value).replace(".0","")+" "+getRegion()+" / "+getType( null );
+        }
+        return Double.toString(value)+" "+getRegion()+" / "+getType(null);
     }
 }

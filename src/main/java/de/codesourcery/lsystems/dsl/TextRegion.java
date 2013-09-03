@@ -1,13 +1,10 @@
 package de.codesourcery.lsystems.dsl;
 
 /**
- * Created with IntelliJ IDEA.
- * User: tobi
- * Date: 9/2/13
- * Time: 11:13 PM
- * To change this template use File | Settings | File Templates.
+ *
+ * @author Tobias.Gierke@code-sourcery.de
  */
-public class TextRegion {
+public final class TextRegion {
 
     public final int start;
     public final int length;
@@ -21,6 +18,30 @@ public class TextRegion {
         }
         this.start = start;
         this.length = length;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TextRegion that = (TextRegion) o;
+
+        if (length != that.length) return false;
+        if (start != that.start) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = start;
+        result = 31 * result + length;
+        return result;
+    }
+
+    public boolean contains(int pos) {
+        return start <= pos && pos < end();
     }
 
     public int start() {
@@ -37,7 +58,12 @@ public class TextRegion {
 
     public TextRegion merge(TextRegion other) {
         int newStart = Math.min( this.start , other.start );
-        int newEnd = Math.max( this.end(), other.end() );
+        int newEnd = Math.max(this.end(), other.end());
         return new TextRegion( newStart , newEnd - newStart );
+    }
+
+    @Override
+    public String toString() {
+        return "[" + start + "-" + end() + "]";
     }
 }
