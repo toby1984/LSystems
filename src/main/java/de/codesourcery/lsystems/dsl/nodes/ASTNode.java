@@ -29,32 +29,28 @@ public abstract class ASTNode {
         setTextRegion( token.region );
     }
 
-    public void addChild(ASTNode child) {
+    public final void addChild(ASTNode child) {
         if (child == null) {
             throw new IllegalArgumentException("child must not be NULL");
         }
         children.add(child);
         child.setParent(this);
-
-        if ( child.getRegion() != null ) {
-            mergeRegion( child.getRegion() );
-        }
     }
 
-    protected void setTextRegion(TextRegion region)
+    protected final void setTextRegion(TextRegion region)
     {
         if ( region == null ) {
             throw new IllegalArgumentException("region cannot be NULL");
         }
-        this.region = region;
+        this.region = new TextRegion(region);
     }
 
-    public ParsedToken mergeRegion(ParsedToken token) {
+    protected final ParsedToken mergeRegion(ParsedToken token) {
         mergeRegion( token.region );
         return token;
     }
 
-    public ASTNode mergeRegion(TextRegion otherRegion) {
+    protected ASTNode mergeRegion(TextRegion otherRegion) {
         if ( this.region == null ) {
             this.region = otherRegion;
         } else {
@@ -63,31 +59,60 @@ public abstract class ASTNode {
         return this;
     }
 
-    public TextRegion getRegion() {
+    /**
+     * Returns the text region occupied by THIS node only (excluding any
+     * text regions occupied by child nodes).
+     *  
+     * @return
+     */
+    public final TextRegion getTextRegion() {
         return region;
     }
+    
+    /**
+     * Returns the text region occupied by this node and
+     * all it's children.
+     *  
+     * @return
+     */    
+    public final TextRegion getTextRegionIncludingChildren() 
+    {
+    	TextRegion result = this.region == null ? null : new TextRegion(this.region);
+    	for ( ASTNode child : children ) {
+    		final TextRegion childRegion = child.getTextRegionIncludingChildren() ;
+    		
+    		if ( childRegion != null ) {
+    			if ( result == null ) {
+    				result = new TextRegion( childRegion );
+    			} else {
+    				result = result.merge( childRegion );
+    			}
+    		}
+    	}
+        return result;
+    }    
 
     public final void reverseChildren() {
         Collections.reverse(children);
     }
 
-    public void setParent(ASTNode parent) {
+    public final void setParent(ASTNode parent) {
         this.parent = parent;
     }
 
-    public List<ASTNode> getChildren() {
+    public final List<ASTNode> getChildren() {
         return children;
     }
 
-    public ASTNode child(int index) {
+    public final ASTNode child(int index) {
         return children.get(index);
     }
 
-    public boolean hasParent() {
+    public final boolean hasParent() {
         return parent != null;
     }
 
-    public boolean hasChildren() {
+    public final boolean hasChildren() {
         return !children.isEmpty();
     }
 
@@ -103,7 +128,7 @@ public abstract class ASTNode {
 
     public abstract String toDebugString();
 
-    public ASTNode getParent() {
+    public final ASTNode getParent() {
         return parent;
     }
 }

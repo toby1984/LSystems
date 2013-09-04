@@ -28,7 +28,7 @@ public class IdentifierNode extends ASTNode implements TermNode
 
     @Override
     public String toDebugString() {
-        return value.toString() + " " + getRegion();
+        return value.toString() + " " + getTextRegion();
     }
 
     @Override

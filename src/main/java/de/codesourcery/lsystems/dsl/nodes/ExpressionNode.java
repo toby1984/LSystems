@@ -369,7 +369,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
     @Override
     public String toDebugString()
     {
-        return "Expression "+getRegion();
+        return "Expression "+getTextRegion();
     }
 
     @Override

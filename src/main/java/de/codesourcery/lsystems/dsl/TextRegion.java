@@ -20,7 +20,11 @@ public final class TextRegion {
         this.length = length;
     }
 
-    @Override
+    public TextRegion(TextRegion region) {
+    	this( region.start() , region.length() );
+	}
+
+	@Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -64,6 +68,6 @@ public final class TextRegion {
 
     @Override
     public String toString() {
-        return "[" + start + "-" + end() + "]";
+        return "[" + start + "-" + (end()-1) + "]";
     }
 }

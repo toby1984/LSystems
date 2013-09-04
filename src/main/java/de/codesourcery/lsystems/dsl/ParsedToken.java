@@ -24,6 +24,6 @@ public class ParsedToken {
 
     @Override
     public String toString() {
-        return value+" ["+type+"]";
+        return value+" ["+type+" , "+region+" ]";
     }
 }

@@ -74,8 +74,8 @@ public class NumberNode extends ASTNode implements TermNode {
     public String toDebugString()
     {
         if ( !hadDecimalPoint) {
-            return Double.toString(value).replace(".0","")+" "+getRegion()+" / "+getType( null );
+            return Double.toString(value).replace(".0","")+" "+getTextRegion()+" / "+getType( null );
         }
-        return Double.toString(value)+" "+getRegion()+" / "+getType(null);
+        return Double.toString(value)+" "+getTextRegion()+" / "+getType(null);
     }
 }

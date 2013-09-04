@@ -42,6 +42,14 @@ public class DSLLexer {
         }
         return tokens.remove(0);
     }
+    
+    private void addToken(ParsedToken tok) {
+    	if ( tok == null ) {
+			throw new IllegalArgumentException("tok must not be NULL");
+		}
+    	System.out.println("Parsed: "+tok);
+    	this.tokens.add( tok );
+    }
 
     private void parseTokens() {
 
@@ -65,28 +73,33 @@ public class DSLLexer {
             switch (c) {
                 case '(':
                     addUnparsed(offset);
-                    tokens.add(new ParsedToken(ParsedTokenType.PARENS_OPEN, scanner.next(), scanner.currentOffset()));
+                    offset = scanner.currentOffset();
+                    addToken(new ParsedToken(ParsedTokenType.PARENS_OPEN, scanner.next(), offset ));
                     return;
                 case ')':
                     addUnparsed(offset);
-                    tokens.add(new ParsedToken(ParsedTokenType.PARENS_CLOSE, scanner.next(), scanner.currentOffset()));
+                    offset = scanner.currentOffset();
+                    addToken(new ParsedToken(ParsedTokenType.PARENS_CLOSE, scanner.next(), offset ));
                     return;
                 case '-':
                     scanner.next();
                     if ( scanner.peek() == '>' ) { // found '->'
-                        tokens.add(new ParsedToken(ParsedTokenType.ARROW, "->", scanner.currentOffset()-1 ) );
+                    	scanner.next();
+                        addToken(new ParsedToken(ParsedTokenType.ARROW, "->", scanner.currentOffset()-1 ) );
                         return;
                     }
                     scanner.pushBack();
                 case '.':
                     addUnparsed(offset);
-                    tokens.add(new ParsedToken(ParsedTokenType.DOT, scanner.next(), scanner.currentOffset()));
+                    offset = scanner.currentOffset();
+                    addToken(new ParsedToken(ParsedTokenType.DOT, scanner.next(), offset ));
                     return;
             }
 
             if (OperatorNode.isValidOperator(c)) {
                 addUnparsed(offset);
-                tokens.add(new ParsedToken(ParsedTokenType.OPERATOR, scanner.next(), scanner.currentOffset()));
+                offset = scanner.currentOffset();
+                addToken(new ParsedToken(ParsedTokenType.OPERATOR, scanner.next(), offset ));
                 return;
             }
 
@@ -97,7 +110,7 @@ public class DSLLexer {
                 while (!scanner.eof() && NumberNode.isValidNumber(buffer.toString() + scanner.peek())) {
                     buffer.append(scanner.next());
                 }
-                tokens.add(new ParsedToken(ParsedTokenType.NUMBER, buffer.toString(), offset));
+                addToken(new ParsedToken(ParsedTokenType.NUMBER, buffer.toString(), offset));
                 return;
             }
             buffer.append(scanner.next());
@@ -111,9 +124,9 @@ public class DSLLexer {
         {
             final String s = buffer.toString();
             if (Identifier.isValidIdentifier(s)) {
-                tokens.add(new ParsedToken(ParsedTokenType.IDENTIFIER, s, offset));
+                addToken(new ParsedToken(ParsedTokenType.IDENTIFIER, s, offset));
             } else {
-                tokens.add(new ParsedToken(ParsedTokenType.UNPARSED, s, offset));
+                addToken(new ParsedToken(ParsedTokenType.UNPARSED, s, offset));
             }
             buffer.setLength(0);
         }

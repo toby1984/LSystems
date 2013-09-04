@@ -66,6 +66,6 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     public String toDebugString() {
-        return "Operator("+Character.toString(type.getSymbol())+") "+getRegion();
+        return "Operator("+Character.toString(type.getSymbol())+") "+getTextRegion();
     }
 }
