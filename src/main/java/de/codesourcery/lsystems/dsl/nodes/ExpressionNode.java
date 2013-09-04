@@ -1,11 +1,10 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.NumberType;
+import java.util.Stack;
+
 import de.codesourcery.lsystems.dsl.ParseContext;
 import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.ParsedTokenType;
-
-import java.util.Stack;
 
 /**
  *

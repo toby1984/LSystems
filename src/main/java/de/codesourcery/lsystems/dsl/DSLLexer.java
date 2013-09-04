@@ -1,20 +1,10 @@
 package de.codesourcery.lsystems.dsl;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.table.TableModel;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-
-import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
-import de.codesourcery.lsystems.dsl.nodes.*;
+import de.codesourcery.lsystems.dsl.nodes.NumberNode;
+import de.codesourcery.lsystems.dsl.nodes.OperatorNode;
 
 /**
  *

@@ -15,7 +15,9 @@
  */
 package de.codesourcery.lsystems.lsystem;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 

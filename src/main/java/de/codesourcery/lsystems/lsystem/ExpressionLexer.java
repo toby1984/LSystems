@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import de.codesourcery.lsystems.Main;
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 
 public class ExpressionLexer implements TokenStream

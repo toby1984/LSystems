@@ -1,7 +1,6 @@
 package de.codesourcery.lsystems.dsl.exceptions;
 
 import de.codesourcery.lsystems.dsl.Identifier;
-import de.codesourcery.lsystems.dsl.nodes.ASTNode;
 
 /**
  *

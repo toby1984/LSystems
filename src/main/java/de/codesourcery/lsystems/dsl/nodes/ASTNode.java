@@ -1,12 +1,12 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.TextRegion;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import de.codesourcery.lsystems.dsl.ParseContext;
+import de.codesourcery.lsystems.dsl.ParsedToken;
+import de.codesourcery.lsystems.dsl.TextRegion;
 
 /**
  *

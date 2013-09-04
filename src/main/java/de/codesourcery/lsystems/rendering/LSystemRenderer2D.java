@@ -19,7 +19,6 @@ import java.awt.Color;
 
 import de.codesourcery.lsystems.lsystem.LSystem;
 import de.codesourcery.lsystems.lsystem.ParameterProvider;
-import de.codesourcery.lsystems.lsystem.Token;
 import de.codesourcery.lsystems.lsystem.TokenSeq;
 import de.codesourcery.lsystems.lsystem.TokenStream;
 

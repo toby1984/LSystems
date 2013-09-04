@@ -1,10 +1,10 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
+import java.util.regex.Pattern;
+
 import de.codesourcery.lsystems.dsl.ParseContext;
 import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.ParsedTokenType;
-
-import java.util.regex.Pattern;
 
 /**
  *
