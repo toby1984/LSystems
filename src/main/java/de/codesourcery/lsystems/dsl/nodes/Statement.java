@@ -6,7 +6,7 @@ import de.codesourcery.lsystems.dsl.ParsedTokenType;
 public class Statement extends ASTNode 
 {
 	@Override
-	public ASTNode parse(ParseContext context) 
+	public IASTNode parse(ParseContext context)
 	{
 		if ( context.peek(ParsedTokenType.SET ) ) 
 		{
@@ -29,7 +29,7 @@ public class Statement extends ASTNode
 	}
 
 	@Override
-	protected ASTNode cloneThisNodeOnly() {
+	protected IASTNode cloneThisNodeOnly() {
 		return new Statement();
 	}
 

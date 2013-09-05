@@ -9,5 +9,5 @@ import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
  */
 public interface ExpressionContext {
 
-    public ASTNode lookup(Identifier identifier) throws UnknownIdentifierException;
+    public IASTNode lookup(Identifier identifier) throws UnknownIdentifierException;
 }

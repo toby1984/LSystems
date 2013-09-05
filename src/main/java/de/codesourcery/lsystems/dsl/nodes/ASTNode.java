@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
 import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.TextRegion;
 import de.codesourcery.lsystems.dsl.nodes.NodeVisitor.IterationContext;
@@ -13,10 +12,10 @@ import de.codesourcery.lsystems.dsl.nodes.NodeVisitor.IterationContext;
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public abstract class ASTNode {
+public abstract class ASTNode implements IASTNode {
 
-    private ASTNode parent;
-    private final List<ASTNode> children = new ArrayList<>();
+    private IASTNode parent;
+    private final List<IASTNode> children = new ArrayList<>();
     private TextRegion region;
 
     protected ASTNode() {
@@ -30,7 +29,8 @@ public abstract class ASTNode {
         setTextRegion( token.region );
     }
 
-    public final void addChild(ASTNode child) {
+    @Override
+    public final void addChild(IASTNode child) {
         if (child == null) {
             throw new IllegalArgumentException("child must not be NULL");
         }
@@ -51,7 +51,7 @@ public abstract class ASTNode {
         return token;
     }
 
-    protected ASTNode mergeRegion(TextRegion otherRegion) {
+    protected IASTNode mergeRegion(TextRegion otherRegion) {
         if ( this.region == null ) {
             this.region = otherRegion;
         } else {
@@ -66,6 +66,7 @@ public abstract class ASTNode {
      *  
      * @return
      */
+    @Override
     public final TextRegion getTextRegion() {
         return region;
     }
@@ -76,10 +77,11 @@ public abstract class ASTNode {
      *  
      * @return
      */    
-    public final TextRegion getTextRegionIncludingChildren() 
+    @Override
+    public final TextRegion getTextRegionIncludingChildren()
     {
     	TextRegion result = this.region == null ? null : new TextRegion(this.region);
-    	for ( ASTNode child : children ) {
+    	for ( IASTNode child : children ) {
     		final TextRegion childRegion = child.getTextRegionIncludingChildren() ;
     		
     		if ( childRegion != null ) {
@@ -93,59 +95,64 @@ public abstract class ASTNode {
         return result;
     }    
 
+    @Override
     public final void reverseChildren() {
         Collections.reverse(children);
     }
 
-    public final void setParent(ASTNode parent) {
+    @Override
+    public final void setParent(IASTNode parent) {
         this.parent = parent;
     }
 
-    public final List<ASTNode> getChildren() {
+    @Override
+    public final List<IASTNode> getChildren() {
         return children;
     }
 
-    public final ASTNode child(int index) {
+    @Override
+    public final IASTNode child(int index) {
         return children.get(index);
     }
 
+    @Override
     public final boolean hasParent() {
         return parent != null;
     }
 
+    @Override
     public final boolean hasChildren() {
         return !children.isEmpty();
     }
 
-    public abstract ASTNode parse(ParseContext context);
-
     public String toString() {
         final StringBuffer result = new StringBuffer();
-        for (ASTNode child : children) {
+        for (IASTNode child : children) {
             result.append(child.toString());
         }
         return result.toString();
     }
 
-    public abstract String toDebugString();
-
-    public final ASTNode getParent() {
+    @Override
+    public final IASTNode getParent() {
         return parent;
     }
     
-    public final void visitPostOrder(NodeVisitor visitor) 
+    @Override
+    public final void visitPostOrder(NodeVisitor visitor)
     {
     	visitPostOrder( visitor, new MyIterationContext() );
     }
     
-    public final <T extends ASTNode> List<T> find(final NodeMatcher matcher) 
+    @Override
+    public final <T extends ASTNode> List<T> find(final NodeMatcher matcher)
     {
     	final List<T> result = new ArrayList<>();
     	visitPostOrder( new NodeVisitor() {
 
 			@SuppressWarnings("unchecked")
 			@Override
-			public void visit(ASTNode node, IterationContext context) 
+			public void visit(IASTNode node, IterationContext context)
 			{
 				if ( matcher.matches( node ) ) {
 					result.add( (T) node );
@@ -155,17 +162,17 @@ public abstract class ASTNode {
     	return result;
     }
     
-    protected final void visitPostOrder(NodeVisitor visitor,MyIterationContext context) 
+    public final void visitPostOrder(NodeVisitor visitor,NodeVisitor.IterationContext context)
     {
-    	for ( ASTNode child : children ) 
+    	for ( IASTNode child : children )
     	{
-    		if ( context.isDontGoDeeper ) 
+    		if ( context.isDontGoDeeper() )
     		{
     			visitor.visit(  child , context );
     		} else {
     			child.visitPostOrder(visitor,context);
     		}
-    		if ( context.isStop ) {
+    		if ( context.isStop() ) {
     			return;
     		}
     	}
@@ -173,28 +180,30 @@ public abstract class ASTNode {
     	visitor.visit( this , context);
     }
     
-    public final ASTNode createCopy(boolean includeChildNodes) 
+    @Override
+    public final IASTNode createCopy(boolean includeChildNodes)
     {
-    	final ASTNode result = cloneThisNodeOnly();
+    	final IASTNode result = cloneThisNodeOnly();
     	if (result == null) {
 			throw new RuntimeException("Internal error, node "+getClass().getName()+" returned NULL value from cloneThisNodeOnly()");
 		}
     	if ( includeChildNodes ) 
     	{
-    		for ( ASTNode child : children ) {
+    		for ( IASTNode child : children ) {
     			result.addChild( child.createCopy( true ) );
     		}
     	}
     	return result;
     }
     
-    protected abstract ASTNode cloneThisNodeOnly();
+    protected abstract IASTNode cloneThisNodeOnly();
     
     protected static final class MyIterationContext implements IterationContext {
 
-    	public boolean isStop = false;
-    	public boolean isDontGoDeeper = false;
-    	
+    	private boolean isStop = false;
+        private boolean isDontGoDeeper = false;
+
+        @Override
     	public void reset() {
     		isStop = false;               
     		isDontGoDeeper = false;       
@@ -209,5 +218,15 @@ public abstract class ASTNode {
 		public void dontGoDeeper() {
 			isDontGoDeeper = true;
 		}
+
+        @Override
+        public boolean isStop() {
+            return isStop;
+        }
+
+        @Override
+        public boolean isDontGoDeeper() {
+            return isDontGoDeeper;
+        }
     }
 }

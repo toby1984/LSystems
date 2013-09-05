@@ -159,6 +159,12 @@ public class DSLLexer {
             }
             switch (c) 
             {
+                case '\'':
+                case '\"':
+                    addUnparsed(offset);
+                    offset = scanner.currentOffset();
+                    addToken(new ParsedToken(ParsedTokenType.QUOTE, scanner.next(), offset ));
+                    return;
             	case ':':
 	                addUnparsed(offset);
 	                offset = scanner.currentOffset();

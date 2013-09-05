@@ -9,13 +9,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import de.codesourcery.lsystems.dsl.nodes.*;
 import org.apache.commons.lang.StringUtils;
-
-import de.codesourcery.lsystems.dsl.nodes.AST;
-import de.codesourcery.lsystems.dsl.nodes.ASTNode;
-import de.codesourcery.lsystems.dsl.nodes.Assignment;
-import de.codesourcery.lsystems.dsl.nodes.NodeMatcher;
-import de.codesourcery.lsystems.dsl.nodes.RuleDefinition;
 
 /**
  * Performs semantic validation on an {@link AST}.
@@ -30,9 +25,9 @@ public class ASTValidator
 	public static final class ValidationError 
 	{
 		public final String message;
-		public final ASTNode node;
+		public final IASTNode node;
 		
-		public ValidationError(String message, ASTNode node) {
+		public ValidationError(String message, IASTNode node) {
 			if ( message == null ) {
 				throw new IllegalArgumentException("message must not be NULL");
 			}
@@ -55,7 +50,7 @@ public class ASTValidator
 			addError(message,null);
 		}		
 		
-		public void addError(String message, ASTNode node) {
+		public void addError(String message, IASTNode node) {
 			addError( new ValidationError(message,node ) );
 		}
 		
@@ -84,7 +79,7 @@ public class ASTValidator
 		}
 	}
 	
-	public ValidationResult validate(AST ast) 
+	public ValidationResult validate(AST ast,ExpressionContext context)
 	{
 		final ValidationResult result = new ValidationResult();
 		
@@ -104,9 +99,21 @@ public class ASTValidator
 		
 		// verify we have exactly one axiom defined
 		validateAssignedExactlyOnce( AXIOM , assignments , result );
+
+        // verify the assigned value is a string
+        final TermNode axiomValue = assignments.getSingleValue(AXIOM).getValue().evaluate( context );
+        if ( ! (axiomValue instanceof StringNode ))
+        {
+            result.addError("Axiom needs to have a string value assigned, was: " , axiomValue);
+        }
 		
 		// verify we have exactly one recursionCount defined
-		validateAssignedExactlyOnce( RECURSION_COUNT , assignments , result );		
+		validateAssignedExactlyOnce( RECURSION_COUNT , assignments , result );
+        final TermNode recursionCountValue = assignments.getSingleValue(RECURSION_COUNT).getValue().evaluate( context );
+        if ( ! recursionCountValue.isLiteralValue() || ! recursionCountValue.getType( context ).isInteger() )
+        {
+            result.addError("recursion count needs to have a integer value assigned, was: "+recursionCountValue.getType(context) , recursionCountValue  );
+        }
 
 		// verify rule names (if set) are unique
 		final Set<Identifier> ruleNames = new HashSet<>();
@@ -194,7 +201,7 @@ public class ASTValidator
 		ast.find( new NodeMatcher() 
 		{
 			@Override
-			public boolean matches(ASTNode node) 
+			public boolean matches(IASTNode node)
 			{
 				if ( node instanceof Assignment) 
 				{
@@ -210,7 +217,7 @@ public class ASTValidator
 		return ast.find( new NodeMatcher() {
 
 			@Override
-			public boolean matches(ASTNode node) 
+			public boolean matches(IASTNode node)
 			{
 				return node instanceof RuleDefinition;
 			}

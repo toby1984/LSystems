@@ -2,57 +2,43 @@ package de.codesourcery.lsystems.dsl.nodes;
 
 import de.codesourcery.lsystems.dsl.Identifier;
 import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.ParsedTokenType;
 
 public class Assignment extends ASTNode 
 {
 	public Identifier name; 
-	public String value;
-	
+
 	@Override
-	public ASTNode parse(ParseContext context) 
+	public IASTNode parse(ParseContext context)
 	{
 		mergeRegion( context.next(ParsedTokenType.SET ) );
 		
 		name = new Identifier( mergeRegion( context.next(ParsedTokenType.IDENTIFIER ) ).value );
 		
 		mergeRegion( context.next(ParsedTokenType.ASSIGNMENT ) );
-		
-		final boolean oldState = context.isSkipWhitespace();
-		try {
-			value = "";
-			boolean required = true;
-			do 
-			{
-				ParsedToken tok = context.peek();
-				if ( ! tok.isWhitespace() )
-				{
-					value += mergeRegion( context.next() ).value;
-					context.setSkipWhitespace(false);
-					required = false;
-				} else if ( required ) {
-					context.fail( "Unexpected token in value: "+context.peek() );
-				} else {
-					break;
-				}
-			} while ( ! context.eof() );
-		} finally {
-			context.setSkipWhitespace(oldState);
-		}
+
+        addChild(new ExpressionNode().parse(context));
 
 		return this;
 	}
 
+    public TermNode getValue() {
+        return hasChildren() ? (TermNode) child(0) : null;
+    }
+
 	@Override
-	public String toDebugString() {
-		return name+" = "+value;
+	public String toDebugString()
+    {
+        if ( hasChildren() ) {
+            return name+" = "+child(0).toDebugString();
+        }
+		return name+" = <no value>";
 	}
 	
 	@Override
 	protected Assignment cloneThisNodeOnly() {
 		final Assignment result = new Assignment();
-		result.value = this.value;
+		result.name = this.name;
 		return result;
 	}
 }

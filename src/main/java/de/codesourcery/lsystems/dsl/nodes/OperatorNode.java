@@ -36,7 +36,7 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public ASTNode parse(ParseContext context) {
+    public IASTNode parse(ParseContext context) {
         context.fail("Not implemented");
         return null; // never reached
     }
@@ -48,12 +48,12 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public double evaluate(ExpressionContext context) {
+    public TermNode evaluate(ExpressionContext context) {
         return type.evaluate( this , context );
     }
 
     @Override
-    public ASTNode reduce(ExpressionContext context) {
+    public TermNode reduce(ExpressionContext context) {
         return type.reduce(this, context);
     }
 
@@ -78,5 +78,10 @@ public class OperatorNode extends ASTNode implements TermNode {
 		final OperatorNode result = new OperatorNode();
 		result.type = this.type;
 		return result;
-	}      
+	}
+
+    @Override
+    public boolean isLiteralValue() {
+        return false;
+    }
 }

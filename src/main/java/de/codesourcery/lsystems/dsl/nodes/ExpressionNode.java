@@ -12,75 +12,128 @@ import de.codesourcery.lsystems.dsl.ParsedTokenType;
  */
 public class ExpressionNode extends ASTNode implements  TermNode
 {
-    private final Stack<ASTNode> values = new Stack<>();
+    private final Stack<IASTNode> values = new Stack<>();
 
     private final Stack<OperatorNode> operators = new Stack<>();
 
     @Override
-    public double evaluate(ExpressionContext context)
+    public TermNode evaluate(ExpressionContext context)
     {
         if ( ! hasChildren() ) {
-            return 0;
+            return this;
         }
         return ((TermNode) child(0)).evaluate(context);
     }
 
     @Override
-    public ASTNode reduce(ExpressionContext context) {
+    public TermNode reduce(ExpressionContext context) {
         return hasChildren() ? ((TermNode) child(0)).reduce(context) : this;
     }
 
-    public static enum Operator {
+    public static enum Operator
+    {
         PLUS('+', 1) {
             @Override
-            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
-                return ((TermNode) operatorNode.child(0)).evaluate(context) + ((TermNode) operatorNode.child(1)).evaluate(context);
+            public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
+            {
+                final TermNode child1 = ((TermNode) operatorNode.child(0)).evaluate( context );
+                final TermNode child2 = ((TermNode) operatorNode.child(1)).evaluate( context );
+
+                if ( isNumeric( child1 , context ) && isNumeric( child2 , context ) )
+                {
+                    final TermType inferredType = inferType(operatorNode.child(0), operatorNode.child(1), context);
+                    return new NumberNode( getDoubleValue( child1 , context) + getDoubleValue( child2 , context) , inferredType);
+                }
+
+                // special case: <string> + <string>
+                if ( isCompatibleToStringValue( child1 , context ) && isCompatibleToStringValue( child2 , context ) ) {
+                    return new StringNode( getStringValue( child1 , context ) + getStringValue( child2 , context ) );
+                }
+                throw new UnsupportedOperationException("Incompatible operands "+child1+" and "+child2);
             }
 
             @Override
-            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
             {
-                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
-                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode)
+                if ( isNumeric(value1,context) && isNumeric( value2 , context ) )
                 {
-                    return new NumberNode( ((NumberNode) value1).value + ((NumberNode) value2).value  , inferType( value1 , value2 , context ));
+                    return numberNode( ((NumberNode) value1).value + ((NumberNode) value2).value  , inferType( value1 , value2 , context ));
                 }
+
+                // special case: <string> + <string>
+                if ( isCompatibleToStringValue( value1 , context ) && isCompatibleToStringValue( value2 , context ) ) {
+                    return new StringNode( getStringValue( value1 , context ) + getStringValue( value2 , context ) );
+                }
+
                 return operatorNode;
+            }
+
+            @Override
+            public TermType inferType(IASTNode n1, IASTNode n2, ExpressionContext context)
+            {
+                if ( n1 instanceof  TermNode && n2 instanceof  TermNode) {
+                    final TermNode child1 = (TermNode) n1;
+                    final TermNode child2 = (TermNode) n2;
+                    if ( isNumeric( child1 , context ) && isNumeric( child2 , context ) ) {
+                        return super.inferType( n1,n2,context );
+                    }
+                    // special case: <string> + <string>
+                    if ( isCompatibleToStringValue( child1 , context ) && isCompatibleToStringValue( child2 , context ) ) {
+                        return TermType.STRING_LITERAL;
+                    }
+                }
+                return super.inferType(n1, n2, context);    //To change body of overridden methods use File | Settings | File Templates.
             }
         },
         MINUS('-', 1) {
             @Override
-            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
-                return ((TermNode) operatorNode.child(0)).evaluate(context) - ((TermNode) operatorNode.child(1)).evaluate(context);
+            public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
+            {
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
+
+                final TermType inferredType = inferType(value1,value2, context);
+
+                double result = getDoubleValue( (TermNode) operatorNode.child(0) , context ) - getDoubleValue( (TermNode) operatorNode.child(1) , context );
+                return numberNode(result,inferredType);
             }
 
             @Override
-            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
             {
-                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
-                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
-                    return new NumberNode( ((NumberNode) value1).value - ((NumberNode) value2).value , inferType( value1 , value2 , context ));
+                if ( isNumeric(value1,context) && isNumeric( value2 , context ) )
+                {
+                    return numberNode( ((NumberNode) value1).value - ((NumberNode) value2).value , inferType( value1 , value2 , context ));
                 }
                 return operatorNode;
             }
         },
         TIMES('*', 2) {
             @Override
-            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
-                return ((TermNode) operatorNode.child(0)).evaluate(context) * ((TermNode) operatorNode.child(1)).evaluate(context);
+            public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
+            {
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
+
+                double value = getDoubleValue( value1.evaluate(context) , context ) * getDoubleValue( value2.evaluate(context)  , context );
+                final TermType inferredType = inferType( value1 , value2 , context );
+                return numberNode(value,inferredType);
             }
 
             @Override
-            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
             {
-                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
-                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode) {
+                if ( isNumeric(value1,context) && isNumeric( value2 , context ) )
+                {
                     return new NumberNode( ((NumberNode) value1).value * ((NumberNode) value2).value  , inferType( value1 , value2 , context ));
                 }
                 return operatorNode;
@@ -88,21 +141,47 @@ public class ExpressionNode extends ASTNode implements  TermNode
         },
         DIVIDE('/', 2) {
             @Override
-            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
-                return ((TermNode) operatorNode.child(0)).evaluate(context) / ((TermNode) operatorNode.child(1)).evaluate(context);
+            public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
+            {
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
+                double result = getDoubleValue( value1 , context ) / getDoubleValue(value2,context);
+                final TermType inferredType = inferType(value1, value2, context);
+                return numberNode( result , inferredType );
             }
 
             @Override
-            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context)
+            public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
             {
-                ASTNode value1 = ((TermNode) operatorNode.child(0)).reduce(context);
-                ASTNode value2 = ((TermNode) operatorNode.child(1)).reduce(context);
+                TermNode value1 = ((TermNode) operatorNode.child(0)).evaluate(context);
+                TermNode value2 = ((TermNode) operatorNode.child(1)).evaluate(context);
 
-                if ( value1 instanceof NumberNode && value2 instanceof NumberNode)
+                if ( isNumeric( value1 , context ) && isNumeric( value2 , context ) )
                 {
-                    return new NumberNode( ((NumberNode) value1).value / ((NumberNode) value2).value  , TermType.FLOATING_POINT );
+                    double result = getDoubleValue(value1,context) / getDoubleValue(value2,context);
+                    TermType inferredType = inferType( value1,value2,context);
+                    return numberNode( result , inferredType );
                 }
                 return operatorNode;
+            }
+
+            @Override
+            public TermType inferType(IASTNode n1, IASTNode n2, ExpressionContext context)
+            {
+                if ( n1 instanceof  TermNode && n2 instanceof  TermNode)
+                {
+                    final TermType t1 = ((TermNode) n1).getType( context );
+                    final TermType t2 = ((TermNode) n2).getType( context );
+
+                    if ( t1.isNumeric() && t2.isNumeric() ) {
+                        // <int> / <int> => int
+                        if ( t1.isInteger() && t2.isInteger() ) {
+                            return TermType.INTEGER;
+                        }
+                        return TermType.FLOATING_POINT;
+                    }
+                }
+                return TermType.UNKNOWN;
             }
         },
         PARENS('(', 100) {
@@ -117,7 +196,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
 
             @Override
-            public double evaluate(OperatorNode operatorNode,ExpressionContext context) {
+            public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context) {
                 return ((TermNode) operatorNode.child(0)).evaluate(context);
             }
 
@@ -133,8 +212,8 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
 
             @Override
-            public ASTNode reduce(OperatorNode operatorNode, ExpressionContext context) {
-                throw new UnsupportedOperationException("cannot reduce parens");
+            public TermNode reduce(OperatorNode operatorNode, ExpressionContext context) {
+                return operatorNode;
             }
         };
 
@@ -150,6 +229,48 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return symbol;
         }
 
+        private static NumberNode numberNode(double value,TermType type) {
+            return new NumberNode(value,type);
+        }
+
+        private static boolean isNumeric(TermNode n,ExpressionContext context)
+        {
+            return ((TermNode) n).getType( context ).isNumeric();
+        }
+
+        private static double getDoubleValue(TermNode n,ExpressionContext context)
+        {
+            if ( !isNumeric(n, context) ) {
+                throw new IllegalArgumentException("Not a TermNode implementation: "+n);
+            }
+            final TermNode value = ((TermNode) n).evaluate(context);
+            if ( !(value instanceof NumberNode ) ) {
+                throw new IllegalArgumentException("Not a numberic expression: "+n);
+            }
+            return ((NumberNode) value).value;
+        }
+
+        private static boolean isCompatibleToStringValue(TermNode n,ExpressionContext context)
+        {
+            final TermNode value = ((TermNode) n).evaluate( context );
+            return ( value instanceof StringNode || value instanceof NumberNode);
+        }
+
+        private static String getStringValue(IASTNode n,ExpressionContext context)
+        {
+            final TermNode value = ((TermNode) n).evaluate( context );
+            if ( value instanceof StringNode) {
+                return ((StringNode) value).value;
+            } else if ( value instanceof NumberNode) {
+
+                if ( ((NumberNode) value).hadDecimalPoint ) {
+                    return Double.toString( ((NumberNode) value).value );
+                }
+                return Long.toString((long) ((NumberNode) value).value);
+            }
+            throw new IllegalArgumentException("Neither a string nor numberic literal: "+n);
+        }
+
         /**
          * Infer type.
          *
@@ -158,7 +279,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
          * @param context
          * @return
          */
-        public TermType inferType(ASTNode n1,ASTNode n2,ExpressionContext context)
+        public TermType inferType(IASTNode n1,IASTNode n2,ExpressionContext context)
         {
             TermType t1 = null;
             if ( n1 instanceof TermNode) {
@@ -227,33 +348,50 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return 2;
         }
 
-        public abstract double evaluate(OperatorNode operatorNode,ExpressionContext context);
+        public abstract TermNode evaluate(OperatorNode operatorNode,ExpressionContext context);
 
-        public abstract ASTNode reduce(OperatorNode operatorNode, ExpressionContext context);
+        public abstract TermNode reduce(OperatorNode operatorNode, ExpressionContext context);
     }
 
     @Override
-    public ASTNode parse(ParseContext context)
+    public IASTNode parse(ParseContext context)
     {
-        while( ! context.eof() )
-        {
-            final ParsedToken tok = context.peek();
-            switch(tok.type )
+        final  boolean oldState = context.isSkipWhitespace();
+
+        context.setSkipWhitespace( false );
+        try {
+            while( ! context.eof() )
             {
-                case IDENTIFIER:
-                    pushValue( new IdentifierNode().parse(context ) );
+                final ParsedToken tok = context.peek();
+                if ( tok.hasType(ParsedTokenType.EOL ) ) {
                     break;
-                case NUMBER:
-                    pushValue(new NumberNode().parse(context));
-                    break;
-                case PARENS_OPEN:
-                case PARENS_CLOSE:
-                case OPERATOR:
-                    pushOperator(context.next(),context);
-                    break;
-                default:
-                    context.fail("Unhandled token: "+tok);
+                }
+                if ( tok.isWhitespace() ) {
+                    context.next();
+                    continue;
+                }
+                switch(tok.type )
+                {
+                    case QUOTE:
+                        pushValue( new StringNode().parse( context ) );
+                        break;
+                    case IDENTIFIER:
+                        pushValue( new IdentifierNode().parse(context ) );
+                        break;
+                    case NUMBER:
+                        pushValue(new NumberNode().parse(context));
+                        break;
+                    case PARENS_OPEN:
+                    case PARENS_CLOSE:
+                    case OPERATOR:
+                        pushOperator(context.next(),context);
+                        break;
+                    default:
+                        context.fail("Unhandled token: "+tok);
+                }
             }
+        } finally {
+            context.setSkipWhitespace( oldState );
         }
 
         while ( ! operators.isEmpty() ) {
@@ -271,7 +409,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
     private void clearStacks() {
     }
 
-    private void pushValue(ASTNode node)
+    private void pushValue(IASTNode node)
     {
         if (node == null) {
             throw new IllegalArgumentException("node must not be null");
@@ -336,7 +474,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
         {
             Operator o2 = operators.peek().type;
             if ( (o1.isLeftAssociative() && (o1.getPrecedence() == o2.getPrecedence())) ||
-                 ( o1.getPrecedence() < o2.getPrecedence() && o2 != Operator.PARENS ) )
+                    ( o1.getPrecedence() < o2.getPrecedence() && o2 != Operator.PARENS ) )
             {
                 popOperator(context);
             } else {
@@ -378,15 +516,20 @@ public class ExpressionNode extends ASTNode implements  TermNode
         if ( ! hasChildren() ) {
             return TermType.VOID;
         }
-        ASTNode reduced = reduce( context );
+        IASTNode reduced = reduce( context );
         if ( reduced != this && reduced instanceof TermNode ) {
             return ((TermNode) reduced).getType( context );
         }
         return TermType.UNKNOWN;
     }
 
-	@Override
-	protected ExpressionNode cloneThisNodeOnly() {
-		return new ExpressionNode();
-	}    
+    @Override
+    public boolean isLiteralValue() {
+        return false;
+    }
+
+    @Override
+    protected ExpressionNode cloneThisNodeOnly() {
+        return new ExpressionNode();
+    }
 }

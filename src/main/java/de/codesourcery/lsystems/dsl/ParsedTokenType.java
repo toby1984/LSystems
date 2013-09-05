@@ -23,6 +23,7 @@ public enum ParsedTokenType
     PARENS_OPEN, // (
     PARENS_CLOSE, // )
     ARROW, // ->
+    QUOTE, // ' or "
     /*
      * Keywords.
      */

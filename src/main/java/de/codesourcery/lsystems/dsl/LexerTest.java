@@ -22,11 +22,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
-import de.codesourcery.lsystems.dsl.nodes.AST;
-import de.codesourcery.lsystems.dsl.nodes.ASTNode;
-import de.codesourcery.lsystems.dsl.nodes.ExpressionContext;
-import de.codesourcery.lsystems.dsl.nodes.NumberNode;
-import de.codesourcery.lsystems.dsl.nodes.TermNode;
+import de.codesourcery.lsystems.dsl.nodes.*;
 
 /**
  *
@@ -101,7 +97,7 @@ public class LexerTest {
         context = new ExpressionContext()
         {
             @Override
-            public ASTNode lookup(Identifier identifier) throws UnknownIdentifierException
+            public IASTNode lookup(Identifier identifier) throws UnknownIdentifierException
             {
                 final Double value = variables.get(identifier);
                 if ( value == null ) {
@@ -166,7 +162,7 @@ public class LexerTest {
                     parseUserInput();
 
                     if ( currentAST != null & currentAST.hasChildren() && currentAST.child(0) instanceof TermNode) {
-                        final ASTNode reduced = ((TermNode) currentAST.child(0)).reduce(context);
+                        final IASTNode reduced = ((TermNode) currentAST.child(0)).reduce(context);
                         System.out.println("REDUCED: "+reduced);
                         if ( reduced instanceof TermNode) {
                             System.out.println("TYPE: "+((TermNode) reduced).getType(context));
@@ -233,9 +229,9 @@ public class LexerTest {
 
     protected static final class NodeWrapper implements TreeNode {
 
-        private final ASTNode node;
+        private final IASTNode node;
 
-        public NodeWrapper(ASTNode node) {
+        public NodeWrapper(IASTNode node) {
             if ( node == null ) {
                 throw new IllegalArgumentException("Node cannot be null");
             }
@@ -280,7 +276,7 @@ public class LexerTest {
         @Override
         public Enumeration children()
         {
-            final Iterator<ASTNode> it = node.getChildren().iterator();
+            final Iterator<IASTNode> it = node.getChildren().iterator();
 
             return new Enumeration<Object>(){
 

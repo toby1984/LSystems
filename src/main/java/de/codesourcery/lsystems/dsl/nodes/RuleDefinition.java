@@ -17,7 +17,7 @@ public class RuleDefinition extends ASTNode {
 	public String replacementExpression;
 	
 	@Override
-	public ASTNode parse(ParseContext context) 
+	public IASTNode parse(ParseContext context)
 	{
 		// rule somerule: a -> b
 		

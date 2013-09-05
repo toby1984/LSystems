@@ -2,5 +2,5 @@ package de.codesourcery.lsystems.dsl.nodes;
 
 public interface NodeMatcher {
 
-	public boolean matches(ASTNode node);
+	public boolean matches(IASTNode node);
 }

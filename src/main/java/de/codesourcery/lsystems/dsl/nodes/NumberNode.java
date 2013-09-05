@@ -31,12 +31,35 @@ public class NumberNode extends ASTNode implements TermNode {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NumberNode that = (NumberNode) o;
+
+        if (hadDecimalPoint != that.hadDecimalPoint) return false;
+        if (Double.compare(that.value, value) != 0) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(value);
+        result = (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (hadDecimalPoint ? 1 : 0);
+        return result;
+    }
+
     public static boolean isValidNumber(String s) {
         return s != null & VALID_NUMBER.matcher(s).matches();
     }
 
     @Override
-    public ASTNode parse(ParseContext context)
+    public IASTNode parse(ParseContext context)
     {
         final ParsedToken tok = mergeRegion(context.next(ParsedTokenType.NUMBER));
 
@@ -56,12 +79,12 @@ public class NumberNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public double evaluate(ExpressionContext context) {
-        return value;
+    public TermNode evaluate(ExpressionContext context) {
+        return this;
     }
 
     @Override
-    public ASTNode reduce(ExpressionContext context) {
+    public TermNode reduce(ExpressionContext context) {
         return this;
     }
 
@@ -85,5 +108,10 @@ public class NumberNode extends ASTNode implements TermNode {
 		result.value = this.value;
 		result.hadDecimalPoint = this.hadDecimalPoint;
 		return result;
-	}       
+	}
+
+    @Override
+    public boolean isLiteralValue() {
+        return true;
+    }
 }

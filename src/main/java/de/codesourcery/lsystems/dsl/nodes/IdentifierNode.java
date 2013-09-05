@@ -15,7 +15,7 @@ public class IdentifierNode extends ASTNode implements TermNode
     public Identifier value;
 
     @Override
-    public ASTNode parse(ParseContext context) {
+    public IASTNode parse(ParseContext context) {
         final ParsedToken token = mergeRegion(context.next(ParsedTokenType.IDENTIFIER));
         this.value = new Identifier(token.value);
         return this;
@@ -32,9 +32,9 @@ public class IdentifierNode extends ASTNode implements TermNode
     }
 
     @Override
-    public double evaluate(ExpressionContext context) throws UnknownIdentifierException
+    public TermNode evaluate(ExpressionContext context) throws UnknownIdentifierException
     {
-        ASTNode value = context.lookup(this.value);
+        IASTNode value = context.lookup(this.value);
         if ( value instanceof TermNode) {
             return ((TermNode) value).evaluate( context );
         }
@@ -42,8 +42,8 @@ public class IdentifierNode extends ASTNode implements TermNode
     }
 
     @Override
-    public ASTNode reduce(ExpressionContext context) {
-        ASTNode value = context.lookup(this.value);
+    public TermNode reduce(ExpressionContext context) {
+        IASTNode value = context.lookup(this.value);
         if ( value instanceof TermNode) {
             return ((TermNode) value).reduce( context );
         }
@@ -53,11 +53,11 @@ public class IdentifierNode extends ASTNode implements TermNode
     @Override
     public TermType getType(ExpressionContext context)
     {
-        ASTNode reduced = reduce( context );
-        if ( reduced instanceof TermNode) {
-            return ((TermNode) reduced).getType( context );
+        TermNode reduced = reduce( context );
+        if ( reduced == this ) {
+            return TermType.UNKNOWN;
         }
-        return TermType.UNKNOWN;
+        return reduced.getType( context );
     }
     
 	@Override
@@ -65,5 +65,10 @@ public class IdentifierNode extends ASTNode implements TermNode
 		final IdentifierNode result = new IdentifierNode();
 		result.value = this.value;
 		return result;
-	}    
+	}
+
+    @Override
+    public boolean isLiteralValue() {
+        return true;
+    }
 }
