@@ -11,6 +11,9 @@ public class OperatorNode extends ASTNode implements TermNode {
 
     public ExpressionNode.Operator type;
 
+    private OperatorNode() {
+    }
+    
     public OperatorNode(ExpressionNode.Operator op,ParsedToken token) {
         super(token);
         this.type = op;
@@ -68,4 +71,12 @@ public class OperatorNode extends ASTNode implements TermNode {
     public String toDebugString() {
         return "Operator("+Character.toString(type.getSymbol())+") "+getTextRegion();
     }
+    
+	@Override
+	protected OperatorNode cloneThisNodeOnly() 
+	{
+		final OperatorNode result = new OperatorNode();
+		result.type = this.type;
+		return result;
+	}      
 }

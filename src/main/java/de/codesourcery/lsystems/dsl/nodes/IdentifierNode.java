@@ -59,4 +59,11 @@ public class IdentifierNode extends ASTNode implements TermNode
         }
         return TermType.UNKNOWN;
     }
+    
+	@Override
+	protected IdentifierNode cloneThisNodeOnly() {
+		final IdentifierNode result = new IdentifierNode();
+		result.value = this.value;
+		return result;
+	}    
 }

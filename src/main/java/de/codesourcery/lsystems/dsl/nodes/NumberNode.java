@@ -78,4 +78,12 @@ public class NumberNode extends ASTNode implements TermNode {
         }
         return Double.toString(value)+" "+getTextRegion()+" / "+getType(null);
     }
+    
+	@Override
+	protected NumberNode cloneThisNodeOnly() {
+		final NumberNode result = new NumberNode();
+		result.value = this.value;
+		result.hadDecimalPoint = this.hadDecimalPoint;
+		return result;
+	}       
 }

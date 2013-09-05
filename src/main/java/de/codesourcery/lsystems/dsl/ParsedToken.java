@@ -16,11 +16,25 @@ public class ParsedToken {
     }
 
     public ParsedToken(ParsedTokenType type, String value, int offset) {
+    	if ( type == null ) {
+			throw new IllegalArgumentException("type must not be NULL");
+		}
+    	if ( value == null ) {
+			throw new IllegalArgumentException("value must not be NULL");
+		}
         this.type = type;
         this.value = value;
         this.offset = offset;
         this.region = new TextRegion( offset , value.length() );
     }
+    
+    public boolean isWhitespace() {
+    	return hasType( ParsedTokenType.WHITESPACE ) || hasType( ParsedTokenType.EOL );
+    }
+    
+    public boolean hasType(ParsedTokenType t) {
+    	return t.equals( type );
+    }    
 
     @Override
     public String toString() {

@@ -17,4 +17,8 @@ public interface ParseContext {
     ParsedToken next(ParsedTokenType number) throws RuntimeException;
 
     boolean peek(ParsedTokenType type);
+
+	boolean isSkipWhitespace();
+
+	void setSkipWhitespace(boolean b);
 }

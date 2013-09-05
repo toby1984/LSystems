@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -37,22 +38,61 @@ public class LexerTest {
     private ExpressionContext context;
 
     private AST currentAST;
-
+    
+    // UI widgets
+    final JTextArea expressionInput = new JTextArea( initialExpression );
+    final JTextArea errorMessages = new JTextArea();
+    final JTree tree=new JTree();
+    
     public static void main(String[] args) {
         new LexerTest().run(args);
     }
 
     private DefaultTreeModel parse(String expression)
     {
-        final AST ast = new Parser().parse( expression );
-        currentAST = ast;
-        return new DefaultTreeModel(new NodeWrapper( ast ) );
+    	boolean success = false;
+    	try 
+    	{
+	        final AST ast = new Parser().parse( expression );
+	        currentAST = ast;
+	        success = true;
+	        return new DefaultTreeModel(new NodeWrapper( ast ) );
+    	} finally {
+	    	if ( ! success ) {
+	    		currentAST = new AST();
+	    	}
+    	}
     }
 
     public LexerTest() {
-
+    }
+    
+    private void error(String message,Throwable t) 
+    {
+    	errorMessages.setText( "ERROR: "+message );
+    	if ( t != null ) {
+    		t.printStackTrace();
+    	}
+    }
+    
+    private void clearErrors() {
+    	errorMessages.setText(null);
     }
 
+    private void parseUserInput() 
+    {
+        try 
+        {
+            tree.setModel(parse(expressionInput.getText()));
+            clearErrors();
+        }
+        catch (Exception ex) 
+        {
+        	error( ex.getMessage() , ex );
+            ex.printStackTrace();
+	        tree.setModel( new DefaultTreeModel(new NodeWrapper( currentAST ) ) );
+        }    	
+    }
     public void run(String[] args)
     {
         final Map<Identifier,Double> variables = new HashMap<>();
@@ -71,20 +111,20 @@ public class LexerTest {
             }
         };
 
-        parse( initialExpression );
-
         final JFrame frame = new JFrame();
 
-        final JTree tree=new JTree( parse( initialExpression ) );
+        errorMessages.setBorder( BorderFactory.createTitledBorder("Errors" ) );
+        tree.setModel( parse( initialExpression ) );
         tree.setRootVisible(true);
 
         final  JPanel panel = new JPanel();
         panel.setLayout( new GridBagLayout() );
 
-        // add text area
-        final JTextArea textArea = new JTextArea( initialExpression );
-        textArea.setColumns(25);
-        textArea.setRows(5);
+        // add text area to enter expressions
+        expressionInput.setText( initialExpression );
+        expressionInput.setColumns(25);
+        expressionInput.setRows(5);
+        expressionInput.setBorder( BorderFactory.createTitledBorder("Input" ) );
 
         GridBagConstraints cnstrs = new GridBagConstraints();
         cnstrs.weightx = 0.9;
@@ -94,7 +134,7 @@ public class LexerTest {
         cnstrs.gridheight=2;
         cnstrs.gridx = 0;
         cnstrs.gridy = 0;
-        panel.add( textArea , cnstrs );
+        panel.add( expressionInput , cnstrs );
 
         // add parse button
         final JButton parseButton = new JButton("Parse");
@@ -102,12 +142,7 @@ public class LexerTest {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                try {
-                    tree.setModel(parse(textArea.getText()));
-                }
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+            	parseUserInput();
             }
         });
         cnstrs = new GridBagConstraints();
@@ -128,7 +163,7 @@ public class LexerTest {
             {
                 try
                 {
-                    parse( textArea.getText() );
+                    parseUserInput();
 
                     if ( currentAST != null & currentAST.hasChildren() && currentAST.child(0) instanceof TermNode) {
                         final ASTNode reduced = ((TermNode) currentAST.child(0)).reduce(context);
@@ -140,8 +175,10 @@ public class LexerTest {
                     } else {
                         System.out.println("Nothing to reduce");
                     }
+                    errorMessages.setText( "" );
                 }
                 catch (Exception ex) {
+                	errorMessages.setText("ERROR: "+ex.getMessage() );                	
                     ex.printStackTrace();
                 }
             }
@@ -155,6 +192,21 @@ public class LexerTest {
         cnstrs.gridx = 1;
         cnstrs.gridy = 1;
         panel.add( reduceButton , cnstrs );
+        
+        // add text area to enter expressions
+        errorMessages.setColumns(25);
+        errorMessages.setRows(5);
+        errorMessages.setEditable( false );
+
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 1;
+        cnstrs.weighty = 1;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=2;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 0;
+        cnstrs.gridy = 2;
+        panel.add( errorMessages , cnstrs );              
 
         // add parse tree view
         final  JScrollPane pane=new JScrollPane( tree );
@@ -167,9 +219,9 @@ public class LexerTest {
         cnstrs.gridwidth=2;
         cnstrs.gridheight=1;
         cnstrs.gridx = 0;
-        cnstrs.gridy = 2;
+        cnstrs.gridy = 3;
         panel.add( pane , cnstrs );
-
+        
         // setup frame
         frame.getContentPane().add( panel );
 

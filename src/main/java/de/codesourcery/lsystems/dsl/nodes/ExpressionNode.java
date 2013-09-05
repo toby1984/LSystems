@@ -384,4 +384,9 @@ public class ExpressionNode extends ASTNode implements  TermNode
         }
         return TermType.UNKNOWN;
     }
+
+	@Override
+	protected ExpressionNode cloneThisNodeOnly() {
+		return new ExpressionNode();
+	}    
 }

@@ -31,15 +31,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-import de.codesourcery.lsystems.lsystem.ExpressionLexer;
+import de.codesourcery.lsystems.dsl.LSystemFactory;
+import de.codesourcery.lsystems.dsl.Parser;
+import de.codesourcery.lsystems.dsl.nodes.AST;
 import de.codesourcery.lsystems.lsystem.LSystem;
 import de.codesourcery.lsystems.lsystem.ParameterProvider;
-import de.codesourcery.lsystems.lsystem.RewritingRule;
 import de.codesourcery.lsystems.lsystem.RuleGenerator;
 import de.codesourcery.lsystems.lsystem.Token;
-import de.codesourcery.lsystems.lsystem.Token.TokenType;
-import de.codesourcery.lsystems.lsystem.TokenSeq;
-import de.codesourcery.lsystems.lsystem.rules.StochasticRule;
 import de.codesourcery.lsystems.rendering.DefaultTokenTranslator;
 import de.codesourcery.lsystems.rendering.HeartRenderer;
 import de.codesourcery.lsystems.rendering.LSystemRenderer2D;
@@ -90,18 +88,12 @@ public class Main extends RuleGenerator
 	
 	protected static LSystem createLSystem(final Random random) 
 	{
-		final LSystem lSystem;
-
-		final TokenSeq parsed = ExpressionLexer.parse( "F" );
+		final String dsl = "set axiom = F\n"+
+                           "set recursionCount = 123\n"+
+                           "rule: F -> F[+F]F[-F]F";
 		
-		lSystem = new LSystem( parsed )
-		{
-			@Override
-			protected void resetHook() 
-			{
-				random.setSeed( seed );
-			}
-		};
+		final AST ast = new Parser().parse( dsl );
+		final LSystem result = new LSystemFactory().createLSystem( ast );
 
         final ParameterProvider provider = new ParameterProvider()
         {
@@ -111,9 +103,9 @@ public class Main extends RuleGenerator
                 switch(identifier)
                 {
                     case "angle":
-                        return Float.toString( 90 / (float) lSystem.recursionCount );
+                        return Float.toString( 90 / (float) result.recursionCount );
                     case "len":
-                        return Float.toString( 10 / (float) lSystem.recursionCount );
+                        return Float.toString( 10 / (float) result.recursionCount );
                     case "bigAngle":
                         return "15";
                     case "smallAngle":
@@ -123,24 +115,8 @@ public class Main extends RuleGenerator
                 }
             }
         };
-        lSystem.setParameterProvider( provider );
-
-        final RewritingRule[] rules = {
-                replaceRule("F", "F(${len})[+(${angle})F(${len})]"),
-                replaceRule("F", "F(${len})[-(${angle})F(${len})]"),
-                replaceRule( "F", "F(${len})[+F(${len})]" ),
-                replaceRule( "F", "F(${len})[-F(${len})]" )
-
-		}; 
-		
-		lSystem.addRule( new StochasticRule(TokenType.FORWARD , rules , new float[]{0.25f,0.25f,.25f,.25f} )
-		{
-			@Override
-			protected float getRandomNumber() {
-				return random.nextFloat();
-			}
-		});		
-		return lSystem;
+        result.setParameterProvider( provider );
+        return result;
 	}
 
 	protected class MyPanel extends JPanel 
@@ -185,7 +161,7 @@ public class Main extends RuleGenerator
 			
 			lSystem.reset();
 
-            lSystem.rewrite(RECURSION_COUNT);
+            lSystem.rewriteRecursively();
 
 			render( lSystem , alphaInDegrees ,g );
 		}

@@ -43,6 +43,16 @@ public class Parser {
             public boolean peek(ParsedTokenType type) {
                 return lexer.peek(type);
             }
+
+			@Override
+			public boolean isSkipWhitespace() {
+				return lexer.isSkipWhitespace();
+			}
+
+			@Override
+			public void setSkipWhitespace(boolean b) {
+				lexer.setSkipWhitespace( b );
+			}
         };
         return new AST().parse( context );
     }

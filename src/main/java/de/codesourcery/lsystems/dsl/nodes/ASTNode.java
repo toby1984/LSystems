@@ -7,6 +7,7 @@ import java.util.List;
 import de.codesourcery.lsystems.dsl.ParseContext;
 import de.codesourcery.lsystems.dsl.ParsedToken;
 import de.codesourcery.lsystems.dsl.TextRegion;
+import de.codesourcery.lsystems.dsl.nodes.NodeVisitor.IterationContext;
 
 /**
  *
@@ -130,5 +131,83 @@ public abstract class ASTNode {
 
     public final ASTNode getParent() {
         return parent;
+    }
+    
+    public final void visitPostOrder(NodeVisitor visitor) 
+    {
+    	visitPostOrder( visitor, new MyIterationContext() );
+    }
+    
+    public final <T extends ASTNode> List<T> find(final NodeMatcher matcher) 
+    {
+    	final List<T> result = new ArrayList<>();
+    	visitPostOrder( new NodeVisitor() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void visit(ASTNode node, IterationContext context) 
+			{
+				if ( matcher.matches( node ) ) {
+					result.add( (T) node );
+				}
+			}
+		});
+    	return result;
+    }
+    
+    protected final void visitPostOrder(NodeVisitor visitor,MyIterationContext context) 
+    {
+    	for ( ASTNode child : children ) 
+    	{
+    		if ( context.isDontGoDeeper ) 
+    		{
+    			visitor.visit(  child , context );
+    		} else {
+    			child.visitPostOrder(visitor,context);
+    		}
+    		if ( context.isStop ) {
+    			return;
+    		}
+    	}
+    	context.reset();
+    	visitor.visit( this , context);
+    }
+    
+    public final ASTNode createCopy(boolean includeChildNodes) 
+    {
+    	final ASTNode result = cloneThisNodeOnly();
+    	if (result == null) {
+			throw new RuntimeException("Internal error, node "+getClass().getName()+" returned NULL value from cloneThisNodeOnly()");
+		}
+    	if ( includeChildNodes ) 
+    	{
+    		for ( ASTNode child : children ) {
+    			result.addChild( child.createCopy( true ) );
+    		}
+    	}
+    	return result;
+    }
+    
+    protected abstract ASTNode cloneThisNodeOnly();
+    
+    protected static final class MyIterationContext implements IterationContext {
+
+    	public boolean isStop = false;
+    	public boolean isDontGoDeeper = false;
+    	
+    	public void reset() {
+    		isStop = false;               
+    		isDontGoDeeper = false;       
+    	}
+    	
+		@Override
+		public void stop() {
+			isStop = true;			
+		}
+
+		@Override
+		public void dontGoDeeper() {
+			isDontGoDeeper = true;
+		}
     }
 }

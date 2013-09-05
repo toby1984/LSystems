@@ -31,6 +31,8 @@ public class LSystem
 	private final TokenSeq axiom;
 	public List<Token> state;
 	private final List<RewritingRule> rules = new ArrayList<>();
+	
+	public int desiredRecursionCount=5;
 	public int recursionCount=0;
 	
 	private ParameterProvider parameterProvider = new ParameterProvider() {
@@ -61,6 +63,27 @@ public class LSystem
 		this.recursionCount = 0;
 		resetHook();
 		return this;
+	}
+	
+	/**
+	 * Sets the desired max. recursion count.
+	 * 
+	 * This count is used by {@link #rewriteRecursively()} to determine
+	 * how many times {@link #rewrite()} should be invoked.
+	 * 
+	 * @param desiredRecursionCount
+	 * @throws IllegalArgumentException if <code>desiredRecursionCount</code> is less than 1
+	 */
+	public void setDesiredRecursionCount(int desiredRecursionCount) 
+	{
+		if ( desiredRecursionCount < 1 ) {
+			throw new IllegalArgumentException("Invalid recursion count: "+desiredRecursionCount);
+		}
+		this.desiredRecursionCount = desiredRecursionCount;
+	}
+	
+	public int getDesiredRecursionCount() {
+		return desiredRecursionCount;
 	}
 	
 	protected void resetHook() {
@@ -95,7 +118,10 @@ public class LSystem
 	}	
 	
 	/**
-	 * Returns the current recursion depth.
+	 * Returns the <b>current<b/> recursion depth.
+	 * 
+	 * Use {@link #getDesiredRecursionCount()} to find out
+	 * how many times {@link #rewriteRecursively()} would actually recursve.</p>
 	 * 
 	 * @return recursion depth, 0 if {@link #rewrite()} has not been called since the last
 	 * call to {@link #reset()} / instantation of this object.
@@ -111,9 +137,10 @@ public class LSystem
      *
      * @see #getRecursionCount()
      */
-    public final void rewrite(int recursionCount)
+    public final void rewriteRecursively()
     {
-        for ( int i = recursionCount ; i > 0 ; i-- ) {
+    	this.recursionCount = 0;
+        for ( int i = desiredRecursionCount; i > 0 ; i-- ) {
             rewrite();
         }
     }
@@ -121,7 +148,7 @@ public class LSystem
 	/**
 	 * Transforms this L-System by applying all matching rules.
 	 * 
-	 * <p>This method performs one recursion, incrementing this system's recursion counter by one.</p>
+	 * <p>This method performs a single recursion, incrementing this system's recursion counter by one.</p>
 	 * 
 	 * @see #getRecursionCount()
 	 */
