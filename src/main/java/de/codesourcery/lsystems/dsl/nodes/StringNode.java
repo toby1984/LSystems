@@ -69,8 +69,12 @@ public class StringNode extends ASTNode implements TermNode
     }
 
     @Override
-    public String toDebugString() {
-        return value;
+    public String toDebugString()
+    {
+        if ( value == null ) {
+            return "<null string>";
+        }
+        return '"'+value+'"'+( getTextRegion() == null ? "" : " " + getTextRegion().toString() );
     }
 
     @Override

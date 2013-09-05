@@ -18,8 +18,9 @@ public class AST extends ASTNode
     }
 
     @Override
-    public String toDebugString() {
-        return "AST "+getTextRegion();
+    public String toDebugString()
+    {
+        return "AST "+( getTextRegion() == null ? "" : getTextRegion().toString() );
     }
 
 	@Override

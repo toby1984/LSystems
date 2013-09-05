@@ -10,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import de.codesourcery.lsystems.dsl.nodes.*;
+import jdk.nashorn.internal.ir.Assignment;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -83,38 +84,6 @@ public class ASTValidator
 	{
 		final ValidationResult result = new ValidationResult();
 		
-		final Assignments assignments = getAssignments( ast );
-		
-		for ( Map.Entry<Identifier, List<Assignment>> entry :assignments.entrySet() )  
-		{
-			if ( entry.getValue().size() > 1 ) 
-			{
-				final Iterator<Assignment> it = entry.getValue().iterator();
-				it.next(); // skip first definition
-				while ( it.hasNext() ) {
-					result.addError( "Variable '"+entry.getKey()+" set more than once" , it.next() );
-				}
-			}
-		}
-		
-		// verify we have exactly one axiom defined
-		validateAssignedExactlyOnce( AXIOM , assignments , result );
-
-        // verify the assigned value is a string
-        final TermNode axiomValue = assignments.getSingleValue(AXIOM).getValue().evaluate( context );
-        if ( ! (axiomValue instanceof StringNode ))
-        {
-            result.addError("Axiom needs to have a string value assigned, was: " , axiomValue);
-        }
-		
-		// verify we have exactly one recursionCount defined
-		validateAssignedExactlyOnce( RECURSION_COUNT , assignments , result );
-        final TermNode recursionCountValue = assignments.getSingleValue(RECURSION_COUNT).getValue().evaluate( context );
-        if ( ! recursionCountValue.isLiteralValue() || ! recursionCountValue.getType( context ).isInteger() )
-        {
-            result.addError("recursion count needs to have a integer value assigned, was: "+recursionCountValue.getType(context) , recursionCountValue  );
-        }
-
 		// verify rule names (if set) are unique
 		final Set<Identifier> ruleNames = new HashSet<>();
 		for ( RuleDefinition r :  getRuleNodes(ast) ) {
@@ -130,89 +99,6 @@ public class ASTValidator
 		return result;
 	}
 
-	private void validateAssignedExactlyOnce(Identifier name,Assignments assignments,ValidationResult result) 
-	{
-		final List<Assignment> axioms = assignments.get( name );
-		if ( axioms.isEmpty() ) {
-			result.addError("Found no "+name+" definition");
-		} else if ( axioms.size() > 1 ) {
-			final Iterator<Assignment> it = axioms.iterator();
-			it.next(); // skip first definition
-			while ( it.hasNext() ) {
-				result.addError( "Duplicate '"+name+"' definition" , it.next() );
-			}			
-		}
-	}
-	
-	public static final class Assignments 
-	{
-		private Map<Identifier,List<Assignment>> map = new HashMap<>();
-		
-		protected void add(Assignment assignment) 
-		{
-			if (assignment == null) {
-				throw new IllegalArgumentException("assignments must not be NULL");
-			}
-			
-			Identifier id = assignment.name;
-			List<Assignment> existing = map.get( id );
-			if ( existing == null ) {
-				existing = new ArrayList<>();
-				map.put( id , existing );
-			}
-			existing.add( assignment );
-		}
-		
-		public Set<Map.Entry<Identifier,List<Assignment>>> entrySet() {
-			return map.entrySet();
-		}
-
-		public List<Assignment> get(Identifier name) 
-		{
-			if (name == null) {
-				throw new IllegalArgumentException("name must not be NULL");
-			}
-			List<Assignment> result = map.get(name);
-			if ( result == null ) {
-				return new ArrayList<>();
-			}
-			return result;
-		}
-		
-		public Assignment getSingleValue(Identifier name) 
-		{
-			if (name == null) {
-				throw new IllegalArgumentException("name must not be NULL");
-			}
-			List<Assignment> result = map.get(name);
-			if ( result == null || result.isEmpty() ) {
-				throw new NoSuchElementException("Found no assignment to '"+name+"'");
-			}
-			if ( result.size() > 1 ) {
-				throw new IllegalStateException("Found more than one assignment to '"+name+"'");
-			}
-			return result.get(0);
-		}		
-	}
-	
-	public static Assignments getAssignments(AST ast) 
-	{
-		final Assignments result = new Assignments();
-		ast.find( new NodeMatcher() 
-		{
-			@Override
-			public boolean matches(IASTNode node)
-			{
-				if ( node instanceof Assignment) 
-				{
-					result.add( (Assignment) node);
-				}
-				return false;
-			}
-		});		
-		return result;
-	}
-	
 	public static List<RuleDefinition> getRuleNodes(AST ast) {
 		return ast.find( new NodeMatcher() {
 

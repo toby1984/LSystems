@@ -18,7 +18,6 @@ public enum ParsedTokenType
     DOT, // .
     COLON, // :
     OPERATOR, // + - * /
-    ASSIGNMENT, // =
     UNPARSED, // anything that did not match any other token
     PARENS_OPEN, // (
     PARENS_CLOSE, // )
@@ -27,7 +26,6 @@ public enum ParsedTokenType
     /*
      * Keywords.
      */
-    SET, // AXIOM
     MAP,  // map
     RULE, // rule
     /*

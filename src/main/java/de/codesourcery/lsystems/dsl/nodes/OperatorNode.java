@@ -13,6 +13,13 @@ public class OperatorNode extends ASTNode implements TermNode {
 
     private OperatorNode() {
     }
+
+    public OperatorNode(ExpressionNode.Operator op) {
+        if (op == null) {
+            throw new IllegalArgumentException("operator must not be null");
+        }
+        this.type = op;
+    }
     
     public OperatorNode(ExpressionNode.Operator op,ParsedToken token) {
         super(token);
@@ -20,11 +27,13 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     public static boolean isValidOperator(char c) {
-        switch(c) {
+        switch(c)
+        {
             case '+':
             case '-':
             case '*':
             case '/':
+            case '=':
                 return true;
             default:
                 return false;
@@ -68,8 +77,13 @@ public class OperatorNode extends ASTNode implements TermNode {
         throw new RuntimeException("Internal error, cannot infer types for operator with "+getChildren().size()+" arguments ?");
     }
 
-    public String toDebugString() {
-        return "Operator("+Character.toString(type.getSymbol())+") "+getTextRegion();
+    public String toDebugString()
+    {
+        String region = "";
+        if ( getTextRegion() != null ) {
+            region = " "+getTextRegion().toString();
+        }
+        return "Operator("+Character.toString(type.getSymbol())+")"+region;
     }
     
 	@Override

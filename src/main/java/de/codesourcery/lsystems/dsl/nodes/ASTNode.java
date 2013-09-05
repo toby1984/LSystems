@@ -21,6 +21,42 @@ public abstract class ASTNode implements IASTNode {
     protected ASTNode() {
     }
 
+
+    public void replaceWith(IASTNode child) {
+        if (child == null) {
+            throw new IllegalArgumentException("child must not be null");
+        }
+        if ( ! hasParent() ) {
+            throw new IllegalStateException("Cannot replaceWith() on node "+this+" that has no parent");
+        }
+        getParent().replaceChild(this, child);
+    }
+
+    @Override
+    public void replaceChild(ASTNode oldChild , IASTNode newChild) {
+
+        if (oldChild == null) {
+            throw new IllegalArgumentException("old child must not be null");
+        }
+
+        if (newChild == null) {
+            throw new IllegalArgumentException("new child must not be null");
+        }
+
+        final int idx = indexOf( oldChild );
+        if ( idx == -1 ) {
+            throw new IllegalArgumentException( oldChild+" is no child of "+this);
+        }
+
+        children.set( idx , newChild );
+        newChild.setParent( this );
+    }
+
+    @Override
+    public int indexOf(IASTNode child) {
+        return children.indexOf( child );
+    }
+
     protected ASTNode(TextRegion region) {
         setTextRegion( region );
     }
@@ -139,12 +175,6 @@ public abstract class ASTNode implements IASTNode {
     }
     
     @Override
-    public final void visitPostOrder(NodeVisitor visitor)
-    {
-    	visitPostOrder( visitor, new MyIterationContext() );
-    }
-    
-    @Override
     public final <T extends ASTNode> List<T> find(final NodeMatcher matcher)
     {
     	final List<T> result = new ArrayList<>();
@@ -161,10 +191,18 @@ public abstract class ASTNode implements IASTNode {
 		});
     	return result;
     }
+
+    @Override
+    public final void visitPostOrder(NodeVisitor visitor)
+    {
+        visitPostOrder( visitor, new MyIterationContext() );
+    }
     
     public final void visitPostOrder(NodeVisitor visitor,NodeVisitor.IterationContext context)
     {
-    	for ( IASTNode child : children )
+        // traverse copy just in case visitor calls replaceWith() on a child
+        final List<IASTNode> copy = new ArrayList<>( children );
+    	for ( IASTNode child : copy )
     	{
     		if ( context.isDontGoDeeper() )
     		{
@@ -178,6 +216,30 @@ public abstract class ASTNode implements IASTNode {
     	}
     	context.reset();
     	visitor.visit( this , context);
+    }
+
+    @Override
+    public final void visitInOrder(NodeVisitor visitor)
+    {
+        visitInOrder( visitor, new MyIterationContext() );
+    }
+
+    public final void visitInOrder(NodeVisitor visitor,NodeVisitor.IterationContext context)
+    {
+        context.reset();
+        visitor.visit( this , context);
+        if ( context.isDontGoDeeper() || context.isStop() ) {
+             return;
+        }
+
+        final List<IASTNode> copy = new ArrayList<>( children );
+        for ( IASTNode child : copy )
+        {
+            child.visitInOrder(visitor,context);
+            if ( context.isStop() ) {
+                return;
+            }
+        }
     }
     
     @Override

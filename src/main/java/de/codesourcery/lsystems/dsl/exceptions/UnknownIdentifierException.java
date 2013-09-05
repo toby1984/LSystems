@@ -11,7 +11,10 @@ public class UnknownIdentifierException extends RuntimeException {
     private final Identifier identifier;
 
     public UnknownIdentifierException(Identifier identifier) {
-        super("Unknown identifier: " + identifier);
+        this("Unknown identifier: "+identifier,identifier);
+    }
+    public UnknownIdentifierException(String message, Identifier identifier) {
+        super( message );
         this.identifier = identifier;
     }
 }

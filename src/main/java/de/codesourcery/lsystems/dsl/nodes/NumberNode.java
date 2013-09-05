@@ -96,10 +96,11 @@ public class NumberNode extends ASTNode implements TermNode {
     @Override
     public String toDebugString()
     {
+        final String region = getTextRegion() == null ? "" : " "+getTextRegion()+" ";
         if ( !hadDecimalPoint) {
-            return Double.toString(value).replace(".0","")+" "+getTextRegion()+" / "+getType( null );
+            return Double.toString(value).replace(".0","")+region+"/ "+getType( null );
         }
-        return Double.toString(value)+" "+getTextRegion()+" / "+getType(null);
+        return Double.toString(value)+region+"/ "+getType(null);
     }
     
 	@Override

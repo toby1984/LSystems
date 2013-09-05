@@ -32,7 +32,23 @@ public class ExpressionNode extends ASTNode implements  TermNode
 
     public static enum Operator
     {
-        PLUS('+', 1) {
+        ASSIGNMENT('=',1)
+                {
+                    @Override
+                    public TermNode evaluate(OperatorNode operatorNode, ExpressionContext context) {
+                        return ((TermNode) operatorNode.child(1)).evaluate(context);
+                    }
+
+                    @Override
+                    public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
+                    {
+                        final OperatorNode result = new OperatorNode( operatorNode.type );
+                        result.addChild( operatorNode.child(0) ); // do not try to reduce LHS of assignment since this triggers an identifier lookup on the assigned variable itself
+                        result.addChild( ((TermNode) operatorNode.child(1)).reduce( context ) );
+                        return result;
+                    }
+                },
+        PLUS('+', 10) {
             @Override
             public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
             {
@@ -88,7 +104,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 return super.inferType(n1, n2, context);    //To change body of overridden methods use File | Settings | File Templates.
             }
         },
-        MINUS('-', 1) {
+        MINUS('-', 10) {
             @Override
             public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
             {
@@ -114,7 +130,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 return operatorNode;
             }
         },
-        TIMES('*', 2) {
+        TIMES('*', 20) {
             @Override
             public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
             {
@@ -139,7 +155,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 return operatorNode;
             }
         },
-        DIVIDE('/', 2) {
+        DIVIDE('/', 20) {
             @Override
             public TermNode evaluate(OperatorNode operatorNode,ExpressionContext context)
             {
@@ -184,6 +200,29 @@ public class ExpressionNode extends ASTNode implements  TermNode
                 return TermType.UNKNOWN;
             }
         },
+        DEREFERENCE('.',30)
+                {
+                    @Override
+                    public TermNode evaluate(OperatorNode operatorNode, ExpressionContext context) {
+                        return ((TermNode) operatorNode.child(1)).evaluate(context);
+                    }
+
+                    @Override
+                    public boolean isLeftAssociative() {
+                        return true;
+                    }
+
+                    @Override
+                    public int getArgumentCount() {
+                        return 1;
+                    }
+
+                    @Override
+                    public TermNode reduce(OperatorNode operatorNode, ExpressionContext context)
+                    {
+                        return operatorNode;
+                    }
+                },
         PARENS('(', 100) {
             @Override
             public boolean isLeftAssociative() {
@@ -238,7 +277,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return ((TermNode) n).getType( context ).isNumeric();
         }
 
-        private static double getDoubleValue(TermNode n,ExpressionContext context)
+        public static double getDoubleValue(TermNode n,ExpressionContext context)
         {
             if ( !isNumeric(n, context) ) {
                 throw new IllegalArgumentException("Not a TermNode implementation: "+n);
@@ -250,13 +289,29 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return ((NumberNode) value).value;
         }
 
-        private static boolean isCompatibleToStringValue(TermNode n,ExpressionContext context)
+        public static int getIntValue(TermNode n,ExpressionContext context)
+        {
+            if ( !isNumeric(n, context) ) {
+                throw new IllegalArgumentException("Not a TermNode implementation: "+n);
+            }
+            final TermNode value = ((TermNode) n).evaluate(context);
+            if ( !(value instanceof NumberNode ) ) {
+                throw new IllegalArgumentException("Not a numberic expression: "+n);
+            }
+            return (int) ((NumberNode) value).value;
+        }
+
+        public boolean matches(String s) {
+            return s != null && s.length() == 1 && s.charAt(0) == getSymbol();
+        }
+
+        public static boolean isCompatibleToStringValue(TermNode n,ExpressionContext context)
         {
             final TermNode value = ((TermNode) n).evaluate( context );
             return ( value instanceof StringNode || value instanceof NumberNode);
         }
 
-        private static String getStringValue(IASTNode n,ExpressionContext context)
+        public static String getStringValue(IASTNode n,ExpressionContext context)
         {
             final TermNode value = ((TermNode) n).evaluate( context );
             if ( value instanceof StringNode) {
@@ -270,6 +325,8 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
             throw new IllegalArgumentException("Neither a string nor numberic literal: "+n);
         }
+
+
 
         /**
          * Infer type.
@@ -328,20 +385,13 @@ public class ExpressionNode extends ASTNode implements  TermNode
 
         public static Operator fromToken(ParsedToken tok)
         {
-            switch(tok.value ) {
-                case "(":
-                    return Operator.PARENS;
-                case "+":
-                    return Operator.PLUS;
-                case "-":
-                    return Operator.MINUS;
-                case "*":
-                    return Operator.TIMES;
-                case "/":
-                    return Operator.DIVIDE;
-                default:
-                    throw new IllegalArgumentException("Unhandled operator: "+tok);
+            for ( Operator op : Operator.values() )
+            {
+                if ( op.matches(tok.value) ) {
+                    return op;
+                }
             }
+            throw new IllegalArgumentException("Unhandled operator: "+tok);
         }
 
         public int getArgumentCount() {
@@ -507,7 +557,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
     @Override
     public String toDebugString()
     {
-        return "Expression "+getTextRegion();
+        return "Expression "+( getTextRegion() == null ? "" : getTextRegion().toString() );
     }
 
     @Override

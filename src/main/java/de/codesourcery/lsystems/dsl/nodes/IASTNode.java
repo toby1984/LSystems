@@ -23,6 +23,10 @@ public interface IASTNode {
 
     IASTNode child(int index);
 
+    int indexOf(IASTNode child);
+
+    void replaceWith(IASTNode other);
+
     boolean hasParent();
 
     boolean hasChildren();
@@ -37,7 +41,13 @@ public interface IASTNode {
 
     void visitPostOrder(NodeVisitor visitor,NodeVisitor.IterationContext context);
 
+    void visitInOrder(NodeVisitor visitor);
+
+    void visitInOrder(NodeVisitor visitor,NodeVisitor.IterationContext context);
+
     <T extends ASTNode> List<T> find(NodeMatcher matcher);
 
     IASTNode createCopy(boolean includeChildNodes);
+
+    void replaceChild(ASTNode astNode, IASTNode child);
 }

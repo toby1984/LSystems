@@ -8,17 +8,13 @@ public class Statement extends ASTNode
 	@Override
 	public IASTNode parse(ParseContext context)
 	{
-		if ( context.peek(ParsedTokenType.SET ) ) 
-		{
-			addChild( new Assignment().parse( context ) );
-		} 
-		else if ( context.peek(ParsedTokenType.RULE ) ) 
+		if ( context.peek(ParsedTokenType.RULE ) )
 		{
 			addChild( new RuleDefinition().parse( context ) );
 		} 
 		else 
 		{
-			context.fail("Unexpected token: "+context.peek());
+			addChild( new ExpressionNode().parse( context ) );
 		}
 		return this;
 	}

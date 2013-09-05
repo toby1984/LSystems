@@ -170,11 +170,6 @@ public class DSLLexer {
 	                offset = scanner.currentOffset();
 	                addToken(new ParsedToken(ParsedTokenType.COLON, scanner.next(), offset ));
 	                return;                		
-            	case '=':
-	                addUnparsed(offset);
-	                offset = scanner.currentOffset();
-	                addToken(new ParsedToken(ParsedTokenType.ASSIGNMENT, scanner.next(), offset ));
-	                return;            
                 case '(':
                     addUnparsed(offset);
                     offset = scanner.currentOffset();
@@ -243,8 +238,6 @@ public class DSLLexer {
                 addToken(new ParsedToken(ParsedTokenType.RULE, s, offset));  
             } else if ( "map".equals( s ) ) {
                 addToken(new ParsedToken(ParsedTokenType.MAP, s, offset));  
-            } else if ( "set".equals( s ) ) {
-                addToken(new ParsedToken(ParsedTokenType.SET, s, offset));            	
             } else if (Identifier.isValidIdentifier(s)) {
                 addToken(new ParsedToken(ParsedTokenType.IDENTIFIER, s, offset));
             } else {

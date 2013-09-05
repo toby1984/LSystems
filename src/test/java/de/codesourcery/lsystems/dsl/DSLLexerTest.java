@@ -6,7 +6,7 @@ import junit.framework.TestCase;
 
 public class DSLLexerTest extends TestCase {
 
-	public void testAssignment() throws Exception 
+/*	public void testAssignment() throws Exception
 	{
 		final String s = "set axiom = \"abc\"";
 		
@@ -55,5 +55,5 @@ public class DSLLexerTest extends TestCase {
 		assertEquals( new Identifier("myFanceRule") , def.ruleName );
 		assertEquals( "ab" , def.expectedExpression);
 		assertEquals( "cd" , def.replacementExpression );
-	}	
+	}	*/
 }

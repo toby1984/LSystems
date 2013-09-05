@@ -9,7 +9,7 @@ import junit.framework.TestCase;
  */
 public class ExpressionTest extends TestCase {
 
-    public void testEvaluate1()
+/*    public void testEvaluate1()
     {
         final String s = "set a = 3";
         final AST ast = new Parser().parse(s);
@@ -113,5 +113,5 @@ public class ExpressionTest extends TestCase {
 
         TermNode reduced = expr.reduce( context );
         assertEquals( new NumberNode( 3 , TermNode.TermType.INTEGER ) , reduced );
-    }
+    }*/
 }

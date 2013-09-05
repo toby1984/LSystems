@@ -5,19 +5,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTree;
-import javax.swing.WindowConstants;
+import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
@@ -31,13 +21,19 @@ import de.codesourcery.lsystems.dsl.nodes.*;
 public class LexerTest {
 
     private String initialExpression = "1.5*2";
-    private ExpressionContext context;
 
     private AST currentAST;
-    
+
     // UI widgets
-    final JTextArea expressionInput = new JTextArea( initialExpression );
-    final JTextArea errorMessages = new JTextArea();
+    private final JTextArea expressionInput = new JTextArea( initialExpression );
+    private final JTextArea errorMessages = new JTextArea();
+
+    private final JList<LSystemEngine.Variable> variablesList = new JList<>();
+
+    private final LSystemEngine engine = new LSystemEngine();
+
+    private final JTextArea prettyPrintedAST = new JTextArea();
+
     final JTree tree=new JTree();
     
     public static void main(String[] args) {
@@ -57,7 +53,32 @@ public class LexerTest {
 	    	if ( ! success ) {
 	    		currentAST = new AST();
 	    	}
+            prettyPrintedAST.setText( new ASTPrinter().print( currentAST ) );
     	}
+    }
+
+    private void execute(AST ast)
+    {
+        this.engine.setAST( ast );
+        engine.run();
+
+        final List<LSystemEngine.Variable> vars = new ArrayList<>();
+        vars.addAll( engine.getVariables().values() );
+
+        variablesList.setModel( new AbstractListModel<LSystemEngine.Variable>() {
+
+            @Override
+            public int getSize()
+            {
+                return vars.size();
+            }
+
+            @Override
+            public LSystemEngine.Variable getElementAt(int index)
+            {
+                return vars.get(index);
+            }
+        } );
     }
 
     public LexerTest() {
@@ -91,22 +112,6 @@ public class LexerTest {
     }
     public void run(String[] args)
     {
-        final Map<Identifier,Double> variables = new HashMap<>();
-        variables.put(new Identifier("a"), 4.0d );
-
-        context = new ExpressionContext()
-        {
-            @Override
-            public IASTNode lookup(Identifier identifier) throws UnknownIdentifierException
-            {
-                final Double value = variables.get(identifier);
-                if ( value == null ) {
-                    throw new UnknownIdentifierException(identifier);
-                }
-                return new NumberNode( value , TermNode.TermType.FLOATING_POINT );
-            }
-        };
-
         final JFrame frame = new JFrame();
 
         errorMessages.setBorder( BorderFactory.createTitledBorder("Errors" ) );
@@ -116,6 +121,9 @@ public class LexerTest {
         final  JPanel panel = new JPanel();
         panel.setLayout( new GridBagLayout() );
 
+        final int rows = 4;
+        final double weightY = 1.0d / (double) rows;
+
         // add text area to enter expressions
         expressionInput.setText( initialExpression );
         expressionInput.setColumns(25);
@@ -123,86 +131,54 @@ public class LexerTest {
         expressionInput.setBorder( BorderFactory.createTitledBorder("Input" ) );
 
         GridBagConstraints cnstrs = new GridBagConstraints();
-        cnstrs.weightx = 0.9;
-        cnstrs.weighty = 0;
+        cnstrs.weightx = 0.7;
+        cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.HORIZONTAL;
         cnstrs.gridwidth=1;
-        cnstrs.gridheight=2;
+        cnstrs.gridheight=1;
         cnstrs.gridx = 0;
         cnstrs.gridy = 0;
         panel.add( expressionInput , cnstrs );
 
-        // add parse button
-        final JButton parseButton = new JButton("Parse");
-        parseButton.addActionListener( new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-            	parseUserInput();
-            }
-        });
+        // add button panel
         cnstrs = new GridBagConstraints();
-        cnstrs.weightx = 0.1;
-        cnstrs.weighty = 0;
+        cnstrs.weightx = 0.3;
+        cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.HORIZONTAL;
         cnstrs.gridwidth=1;
         cnstrs.gridheight=1;
         cnstrs.gridx = 1;
         cnstrs.gridy = 0;
-        panel.add( parseButton , cnstrs );
 
-        // add reduce button
-        final JButton reduceButton = new JButton("Reduce");
-        reduceButton.addActionListener( new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                try
-                {
-                    parseUserInput();
+        panel.add( createButtonPanel() , cnstrs );
 
-                    if ( currentAST != null & currentAST.hasChildren() && currentAST.child(0) instanceof TermNode) {
-                        final IASTNode reduced = ((TermNode) currentAST.child(0)).reduce(context);
-                        System.out.println("REDUCED: "+reduced);
-                        if ( reduced instanceof TermNode) {
-                            System.out.println("TYPE: "+((TermNode) reduced).getType(context));
-                        }
-                        tree.setModel(new DefaultTreeModel(new NodeWrapper(reduced)));
-                    } else {
-                        System.out.println("Nothing to reduce");
-                    }
-                    errorMessages.setText( "" );
-                }
-                catch (Exception ex) {
-                	errorMessages.setText("ERROR: "+ex.getMessage() );                	
-                    ex.printStackTrace();
-                }
-            }
-        });
-        cnstrs = new GridBagConstraints();
-        cnstrs.weightx = 0.1;
-        cnstrs.weighty = 0;
-        cnstrs.fill = GridBagConstraints.HORIZONTAL;
-        cnstrs.gridwidth=1;
-        cnstrs.gridheight=1;
-        cnstrs.gridx = 1;
-        cnstrs.gridy = 1;
-        panel.add( reduceButton , cnstrs );
-        
-        // add text area to enter expressions
+        // add text area to display error messages
         errorMessages.setColumns(25);
         errorMessages.setRows(5);
         errorMessages.setEditable( false );
 
         cnstrs = new GridBagConstraints();
-        cnstrs.weightx = 1;
-        cnstrs.weighty = 1;
+        cnstrs.weightx = 0.5;
+        cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.HORIZONTAL;
-        cnstrs.gridwidth=2;
+        cnstrs.gridwidth=1;
         cnstrs.gridheight=1;
         cnstrs.gridx = 0;
-        cnstrs.gridy = 2;
-        panel.add( errorMessages , cnstrs );              
+        cnstrs.gridy = 1;
+        panel.add( errorMessages , cnstrs );
+
+        // add JList that shows variables
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 0.5;
+        cnstrs.weighty = 1;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 1;
+        cnstrs.gridy = 1;
+
+        final JScrollPane listPane = new JScrollPane(variablesList);
+        panel.add(listPane, cnstrs );
 
         // add parse tree view
         final  JScrollPane pane=new JScrollPane( tree );
@@ -210,13 +186,27 @@ public class LexerTest {
 
         cnstrs = new GridBagConstraints();
         cnstrs.weightx = 1;
-        cnstrs.weighty = 1;
+        cnstrs.weighty = weightY;
+        cnstrs.fill = GridBagConstraints.BOTH;
+        cnstrs.gridwidth=2;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 0;
+        cnstrs.gridy = 2;
+        panel.add( pane , cnstrs );
+
+        // add pretty-printed AST view
+        final  JScrollPane pane2=new JScrollPane( prettyPrintedAST );
+        pane2.setPreferredSize(new Dimension(200,200));
+
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 1;
+        cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.BOTH;
         cnstrs.gridwidth=2;
         cnstrs.gridheight=1;
         cnstrs.gridx = 0;
         cnstrs.gridy = 3;
-        panel.add( pane , cnstrs );
+        panel.add( pane2  , cnstrs );
         
         // setup frame
         frame.getContentPane().add( panel );
@@ -225,6 +215,100 @@ public class LexerTest {
 
         frame.pack();
         frame.setVisible( true );
+    }
+
+    private JPanel createButtonPanel()
+    {
+        int y = 0;
+
+        final JPanel panel = new JPanel();
+        panel.setLayout( new GridBagLayout() );
+
+        // add parse button
+        addButton( panel , "Parse" , y , new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                parseUserInput();
+            }
+        });
+        y++;
+
+        // add reduce button
+        addButton( panel , "Reduce" , y , new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                reduceUserInput();
+            }
+        });
+        y++;
+
+        // add execute button
+        addButton( panel , "Execute" , y , new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                executeUserInput();
+            }
+        });
+        y++;
+
+        return panel;
+    }
+
+    private void executeUserInput() {
+        try
+        {
+            parseUserInput();
+            execute( currentAST );
+            errorMessages.setText( "" );
+        }
+        catch (Exception ex) {
+            errorMessages.setText("ERROR: "+ex.getMessage() );
+            ex.printStackTrace();
+        }
+    }
+
+    private void reduceUserInput()
+    {
+        try
+        {
+            parseUserInput();
+
+            if ( currentAST != null )
+            {
+                execute( currentAST );
+                new ASTRewriter().reduce( currentAST , engine.getCurrentContext() );
+
+                System.out.println("REDUCED: "+currentAST);
+                tree.setModel(new DefaultTreeModel(new NodeWrapper(currentAST)));
+            } else {
+                System.out.println("Nothing to reduce");
+            }
+            errorMessages.setText( "" );
+        }
+        catch (Exception ex) {
+            errorMessages.setText("ERROR: "+ex.getMessage() );
+            ex.printStackTrace();
+        } finally {
+            prettyPrintedAST.setText( new ASTPrinter().print( currentAST ) );
+        }
+    }
+
+    private void addButton(JPanel panel,String label , int y , ActionListener listener) {
+        final JButton button = new JButton( label );
+        button.addActionListener(listener);
+
+        final GridBagConstraints cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 0.1;
+        cnstrs.weighty = 0;
+        cnstrs.fill = GridBagConstraints.HORIZONTAL;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 0;
+        cnstrs.gridy = y;
+        panel.add( button , cnstrs );
     }
 
     protected static final class NodeWrapper implements TreeNode {

@@ -1,6 +1,5 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.ASTValidator.Assignments;
 import de.codesourcery.lsystems.dsl.ASTValidator.ValidationResult;
 import de.codesourcery.lsystems.dsl.nodes.*;
 import de.codesourcery.lsystems.lsystem.ExpressionLexer;
@@ -28,13 +27,18 @@ public class LSystemFactory
 		}
 		new ASTValidator().validate( ast , context ).assertNoErrors();
 
-		final Assignments assignments = ASTValidator.getAssignments( ast );		
-		final Assignment assignment = assignments.getSingleValue( ASTValidator.AXIOM );
+        final LSystemEngine engine = new LSystemEngine();
+        engine.setAST( ast );
+        engine.run();
 
-        final StringNode string = (StringNode) assignment.getValue();
-        final TokenSeq axiom = ExpressionLexer.parse(string.value);
-		
-		final LSystem result = new LSystem( axiom );
+		final String axiomSymbols = engine.getStringValue(ASTValidator.AXIOM);
+        final int recursionCount = engine.getIntValue( ASTValidator.RECURSION_COUNT);
+
+        final TokenSeq axiom = ExpressionLexer.parse( axiomSymbols );
+
+        final LSystem result = new LSystem( axiom );
+        result.setDesiredRecursionCount( recursionCount );
+
 		for ( RuleDefinition r : ASTValidator.getRuleNodes( ast ) ) {
 			result.addRule( r.toRewritingRule() );
 		}

@@ -42,10 +42,16 @@ public class IdentifierNode extends ASTNode implements TermNode
     }
 
     @Override
-    public TermNode reduce(ExpressionContext context) {
+    public TermNode reduce(ExpressionContext context)
+    {
         IASTNode value = context.lookup(this.value);
         if ( value instanceof TermNode) {
-            return ((TermNode) value).reduce( context );
+            final TermNode initialNode = (TermNode) value;
+            TermNode result =  initialNode.reduce(context);
+            if ( result != initialNode && result instanceof IdentifierNode) {
+                return result.reduce( context );
+            }
+            return result;
         }
         return this;
     }
