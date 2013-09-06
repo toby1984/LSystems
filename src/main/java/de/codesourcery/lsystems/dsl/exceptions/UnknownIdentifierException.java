@@ -1,6 +1,6 @@
 package de.codesourcery.lsystems.dsl.exceptions;
 
-import de.codesourcery.lsystems.dsl.Identifier;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  *
@@ -17,4 +17,8 @@ public class UnknownIdentifierException extends RuntimeException {
         super( message );
         this.identifier = identifier;
     }
+    
+    public Identifier getIdentifier() {
+		return identifier;
+	}
 }

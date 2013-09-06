@@ -1,7 +1,10 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.nodes.AST;
 import junit.framework.TestCase;
+import de.codesourcery.lsystems.dsl.execution.LSystemInterpreter;
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.parsing.Parser;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  * @author Tobias.Gierke@code-sourcery.de
@@ -12,7 +15,7 @@ public class LSystemEngineTest extends TestCase {
 
         String dsl="a=3";
         final AST ast = new Parser().parse( dsl );
-        final LSystemEngine engine = new LSystemEngine();
+        final LSystemInterpreter engine = new LSystemInterpreter();
         engine.setAST( ast );
         System.out.println("Executed " + engine.run() + " instructions");
 
@@ -24,7 +27,7 @@ public class LSystemEngineTest extends TestCase {
 
         String dsl="a=\"3\"";
         final AST ast = new Parser().parse( dsl );
-        final LSystemEngine engine = new LSystemEngine();
+        final LSystemInterpreter engine = new LSystemInterpreter();
         engine.setAST(ast);
         System.out.println("Executed " + engine.run() + " instructions");
 

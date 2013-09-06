@@ -2,17 +2,17 @@ package de.codesourcery.lsystems.dsl.nodes;
 
 import java.util.Stack;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class ExpressionNode extends ASTNode implements  TermNode
+public class ExpressionNode extends AbstractASTNode implements  TermNode
 {
-    private final Stack<IASTNode> values = new Stack<>();
+    private final Stack<ASTNode> values = new Stack<>();
 
     private final Stack<OperatorNode> operators = new Stack<>();
 
@@ -88,7 +88,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
 
             @Override
-            public TermType inferType(IASTNode n1, IASTNode n2, ExpressionContext context)
+            public TermType inferType(ASTNode n1, ASTNode n2, ExpressionContext context)
             {
                 if ( n1 instanceof  TermNode && n2 instanceof  TermNode) {
                     final TermNode child1 = (TermNode) n1;
@@ -182,7 +182,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             }
 
             @Override
-            public TermType inferType(IASTNode n1, IASTNode n2, ExpressionContext context)
+            public TermType inferType(ASTNode n1, ASTNode n2, ExpressionContext context)
             {
                 if ( n1 instanceof  TermNode && n2 instanceof  TermNode)
                 {
@@ -311,7 +311,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
             return ( value instanceof StringNode || value instanceof NumberNode);
         }
 
-        public static String getStringValue(IASTNode n,ExpressionContext context)
+        public static String getStringValue(ASTNode n,ExpressionContext context)
         {
             final TermNode value = ((TermNode) n).evaluate( context );
             if ( value instanceof StringNode) {
@@ -336,7 +336,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
          * @param context
          * @return
          */
-        public TermType inferType(IASTNode n1,IASTNode n2,ExpressionContext context)
+        public TermType inferType(ASTNode n1,ASTNode n2,ExpressionContext context)
         {
             TermType t1 = null;
             if ( n1 instanceof TermNode) {
@@ -404,7 +404,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
     }
 
     @Override
-    public IASTNode parse(ParseContext context)
+    public ASTNode parse(ParseContext context)
     {
         final  boolean oldState = context.isSkipWhitespace();
 
@@ -456,10 +456,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
         return this;
     }
 
-    private void clearStacks() {
-    }
-
-    private void pushValue(IASTNode node)
+    private void pushValue(ASTNode node)
     {
         if (node == null) {
             throw new IllegalArgumentException("node must not be null");
@@ -566,7 +563,7 @@ public class ExpressionNode extends ASTNode implements  TermNode
         if ( ! hasChildren() ) {
             return TermType.VOID;
         }
-        IASTNode reduced = reduce( context );
+        ASTNode reduced = reduce( context );
         if ( reduced != this && reduced instanceof TermNode ) {
             return ((TermNode) reduced).getType( context );
         }

@@ -1,7 +1,5 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
-import de.codesourcery.lsystems.dsl.nodes.*;
 import junit.framework.TestCase;
 
 public class DSLLexerTest extends TestCase {

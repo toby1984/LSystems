@@ -1,7 +1,9 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.execution;
 
-import de.codesourcery.lsystems.dsl.ASTValidator.ValidationResult;
-import de.codesourcery.lsystems.dsl.nodes.*;
+import de.codesourcery.lsystems.dsl.execution.ASTValidator.ValidationResult;
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.nodes.ExpressionContext;
+import de.codesourcery.lsystems.dsl.nodes.RuleDefinition;
 import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.LSystem;
 import de.codesourcery.lsystems.lsystem.TokenSeq;
@@ -20,14 +22,15 @@ public class LSystemFactory
 	 * @throws IllegalStateException if the AST contained validation errors
 	 * @see ValidationResult#assertNoErrors()
 	 */
-	public LSystem createLSystem(AST ast,ExpressionContext context)
+	public LSystem createLSystem(AST ast)
 	{
 		if (ast == null) {
 			throw new IllegalArgumentException("ast must not be NULL");
 		}
-		new ASTValidator().validate( ast , context ).assertNoErrors();
+		
+		new ASTValidator().validate( ast ).assertNoErrors();
 
-        final LSystemEngine engine = new LSystemEngine();
+        final LSystemInterpreter engine = new LSystemInterpreter();
         engine.setAST( ast );
         engine.run();
 

@@ -13,5 +13,5 @@ public interface NodeVisitor {
         public void reset();
 	}
 	
-	public void visit(IASTNode node, IterationContext context);
+	public void visit(ASTNode node, IterationContext context);
 }

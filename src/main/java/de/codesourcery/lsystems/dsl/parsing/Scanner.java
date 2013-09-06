@@ -1,4 +1,4 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.parsing;
 
 /**
  *

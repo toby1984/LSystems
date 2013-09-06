@@ -1,15 +1,15 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.Identifier;
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 import de.codesourcery.lsystems.lsystem.ExpressionLexer;
 import de.codesourcery.lsystems.lsystem.RewritingRule;
 import de.codesourcery.lsystems.lsystem.Token.TokenType;
 import de.codesourcery.lsystems.lsystem.TokenSeq;
 import de.codesourcery.lsystems.lsystem.rules.SimpleRule;
 
-public class RuleDefinition extends ASTNode {
+public class RuleDefinition extends AbstractASTNode {
 
 	public Identifier ruleName; // may be NULL
 	
@@ -17,7 +17,7 @@ public class RuleDefinition extends ASTNode {
 	public String replacementExpression;
 	
 	@Override
-	public IASTNode parse(ParseContext context)
+	public ASTNode parse(ParseContext context)
 	{
 		// rule somerule: a -> b
 		

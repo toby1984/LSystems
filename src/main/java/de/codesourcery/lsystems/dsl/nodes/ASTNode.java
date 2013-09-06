@@ -1,294 +1,62 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.TextRegion;
-import de.codesourcery.lsystems.dsl.nodes.NodeVisitor.IterationContext;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.TextRegion;
+import de.codesourcery.lsystems.dsl.symbols.Scope;
 
 /**
- *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public abstract class ASTNode implements IASTNode {
+public interface ASTNode 
+{
+    void addChild(ASTNode child);
 
-    private IASTNode parent;
-    private final List<IASTNode> children = new ArrayList<>();
-    private TextRegion region;
+    TextRegion getTextRegion();
 
-    protected ASTNode() {
-    }
+    TextRegion getTextRegionIncludingChildren();
 
+    void reverseChildren();
 
-    public void replaceWith(IASTNode child) {
-        if (child == null) {
-            throw new IllegalArgumentException("child must not be null");
-        }
-        if ( ! hasParent() ) {
-            throw new IllegalStateException("Cannot replaceWith() on node "+this+" that has no parent");
-        }
-        getParent().replaceChild(this, child);
-    }
+    void setParent(ASTNode parent);
 
-    @Override
-    public void replaceChild(ASTNode oldChild , IASTNode newChild) {
+    List<ASTNode> getChildren();
 
-        if (oldChild == null) {
-            throw new IllegalArgumentException("old child must not be null");
-        }
+    ASTNode child(int index);
 
-        if (newChild == null) {
-            throw new IllegalArgumentException("new child must not be null");
-        }
-
-        final int idx = indexOf( oldChild );
-        if ( idx == -1 ) {
-            throw new IllegalArgumentException( oldChild+" is no child of "+this);
-        }
-
-        children.set( idx , newChild );
-        newChild.setParent( this );
-    }
-
-    @Override
-    public int indexOf(IASTNode child) {
-        return children.indexOf( child );
-    }
-
-    protected ASTNode(TextRegion region) {
-        setTextRegion( region );
-    }
-
-    protected ASTNode(ParsedToken token) {
-        setTextRegion( token.region );
-    }
-
-    @Override
-    public final void addChild(IASTNode child) {
-        if (child == null) {
-            throw new IllegalArgumentException("child must not be NULL");
-        }
-        children.add(child);
-        child.setParent(this);
-    }
-
-    protected final void setTextRegion(TextRegion region)
-    {
-        if ( region == null ) {
-            throw new IllegalArgumentException("region cannot be NULL");
-        }
-        this.region = new TextRegion(region);
-    }
-
-    protected final ParsedToken mergeRegion(ParsedToken token) {
-        mergeRegion( token.region );
-        return token;
-    }
-
-    protected IASTNode mergeRegion(TextRegion otherRegion) {
-        if ( this.region == null ) {
-            this.region = otherRegion;
-        } else {
-            this.region = this.region.merge( otherRegion );
-        }
-        return this;
-    }
-
+    int indexOf(ASTNode child);
+    
     /**
-     * Returns the text region occupied by THIS node only (excluding any
-     * text regions occupied by child nodes).
-     *  
+     * Returns the scope this node is defined in.
+     * 
      * @return
      */
-    @Override
-    public final TextRegion getTextRegion() {
-        return region;
-    }
-    
-    /**
-     * Returns the text region occupied by this node and
-     * all it's children.
-     *  
-     * @return
-     */    
-    @Override
-    public final TextRegion getTextRegionIncludingChildren()
-    {
-    	TextRegion result = this.region == null ? null : new TextRegion(this.region);
-    	for ( IASTNode child : children ) {
-    		final TextRegion childRegion = child.getTextRegionIncludingChildren() ;
-    		
-    		if ( childRegion != null ) {
-    			if ( result == null ) {
-    				result = new TextRegion( childRegion );
-    			} else {
-    				result = result.merge( childRegion );
-    			}
-    		}
-    	}
-        return result;
-    }    
+    public Scope getDefinitionScope();
 
-    @Override
-    public final void reverseChildren() {
-        Collections.reverse(children);
-    }
+    void replaceWith(ASTNode other);
 
-    @Override
-    public final void setParent(IASTNode parent) {
-        this.parent = parent;
-    }
+    boolean hasParent();
 
-    @Override
-    public final List<IASTNode> getChildren() {
-        return children;
-    }
+    boolean hasChildren();
 
-    @Override
-    public final IASTNode child(int index) {
-        return children.get(index);
-    }
+    ASTNode parse(ParseContext context);
 
-    @Override
-    public final boolean hasParent() {
-        return parent != null;
-    }
+    String toDebugString();
 
-    @Override
-    public final boolean hasChildren() {
-        return !children.isEmpty();
-    }
+    ASTNode getParent();
 
-    public String toString() {
-        final StringBuffer result = new StringBuffer();
-        for (IASTNode child : children) {
-            result.append(child.toString());
-        }
-        return result.toString();
-    }
+    void visitPostOrder(NodeVisitor visitor);
 
-    @Override
-    public final IASTNode getParent() {
-        return parent;
-    }
-    
-    @Override
-    public final <T extends ASTNode> List<T> find(final NodeMatcher matcher)
-    {
-    	final List<T> result = new ArrayList<>();
-    	visitPostOrder( new NodeVisitor() {
+    void visitPostOrder(NodeVisitor visitor,NodeVisitor.IterationContext context);
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public void visit(IASTNode node, IterationContext context)
-			{
-				if ( matcher.matches( node ) ) {
-					result.add( (T) node );
-				}
-			}
-		});
-    	return result;
-    }
+    void visitInOrder(NodeVisitor visitor);
 
-    @Override
-    public final void visitPostOrder(NodeVisitor visitor)
-    {
-        visitPostOrder( visitor, new MyIterationContext() );
-    }
-    
-    public final void visitPostOrder(NodeVisitor visitor,NodeVisitor.IterationContext context)
-    {
-        // traverse copy just in case visitor calls replaceWith() on a child
-        final List<IASTNode> copy = new ArrayList<>( children );
-    	for ( IASTNode child : copy )
-    	{
-    		if ( context.isDontGoDeeper() )
-    		{
-    			visitor.visit(  child , context );
-    		} else {
-    			child.visitPostOrder(visitor,context);
-    		}
-    		if ( context.isStop() ) {
-    			return;
-    		}
-    	}
-    	context.reset();
-    	visitor.visit( this , context);
-    }
+    void visitInOrder(NodeVisitor visitor,NodeVisitor.IterationContext context);
 
-    @Override
-    public final void visitInOrder(NodeVisitor visitor)
-    {
-        visitInOrder( visitor, new MyIterationContext() );
-    }
+    <T extends AbstractASTNode> List<T> find(NodeMatcher matcher);
 
-    public final void visitInOrder(NodeVisitor visitor,NodeVisitor.IterationContext context)
-    {
-        context.reset();
-        visitor.visit( this , context);
-        if ( context.isDontGoDeeper() || context.isStop() ) {
-             return;
-        }
+    ASTNode createCopy(boolean includeChildNodes);
 
-        final List<IASTNode> copy = new ArrayList<>( children );
-        for ( IASTNode child : copy )
-        {
-            child.visitInOrder(visitor,context);
-            if ( context.isStop() ) {
-                return;
-            }
-        }
-    }
-    
-    @Override
-    public final IASTNode createCopy(boolean includeChildNodes)
-    {
-    	final IASTNode result = cloneThisNodeOnly();
-    	if (result == null) {
-			throw new RuntimeException("Internal error, node "+getClass().getName()+" returned NULL value from cloneThisNodeOnly()");
-		}
-    	if ( includeChildNodes ) 
-    	{
-    		for ( IASTNode child : children ) {
-    			result.addChild( child.createCopy( true ) );
-    		}
-    	}
-    	return result;
-    }
-    
-    protected abstract IASTNode cloneThisNodeOnly();
-    
-    protected static final class MyIterationContext implements IterationContext {
-
-    	private boolean isStop = false;
-        private boolean isDontGoDeeper = false;
-
-        @Override
-    	public void reset() {
-    		isStop = false;               
-    		isDontGoDeeper = false;       
-    	}
-    	
-		@Override
-		public void stop() {
-			isStop = true;			
-		}
-
-		@Override
-		public void dontGoDeeper() {
-			isDontGoDeeper = true;
-		}
-
-        @Override
-        public boolean isStop() {
-            return isStop;
-        }
-
-        @Override
-        public boolean isDontGoDeeper() {
-            return isDontGoDeeper;
-        }
-    }
+    void replaceChild(AbstractASTNode astNode, ASTNode child);
 }

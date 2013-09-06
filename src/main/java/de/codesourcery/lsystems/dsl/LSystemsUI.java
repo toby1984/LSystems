@@ -5,21 +5,44 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import javax.swing.*;
+import javax.swing.AbstractListModel;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTree;
+import javax.swing.WindowConstants;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
-import de.codesourcery.lsystems.dsl.nodes.*;
+import de.codesourcery.lsystems.dsl.execution.LSystemInterpreter;
+import de.codesourcery.lsystems.dsl.execution.MyObject;
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.nodes.ASTNode;
+import de.codesourcery.lsystems.dsl.parsing.Parser;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
+import de.codesourcery.lsystems.dsl.symbols.Symbol;
+import de.codesourcery.lsystems.dsl.utils.ASTPrinter;
+import de.codesourcery.lsystems.dsl.utils.ASTUtils;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class LexerTest {
-
+public class LSystemsUI 
+{
     private String initialExpression = "1.5*2";
 
     private AST currentAST;
@@ -28,16 +51,18 @@ public class LexerTest {
     private final JTextArea expressionInput = new JTextArea( initialExpression );
     private final JTextArea errorMessages = new JTextArea();
 
-    private final JList<LSystemEngine.Variable> variablesList = new JList<>();
+    private final JList<String> variablesList = new JList<>();
+    
+    private final JTable symbols = new JTable();
 
-    private final LSystemEngine engine = new LSystemEngine();
+    private final LSystemInterpreter engine = new LSystemInterpreter();
 
     private final JTextArea prettyPrintedAST = new JTextArea();
-
+    
     final JTree tree=new JTree();
     
     public static void main(String[] args) {
-        new LexerTest().run(args);
+        new LSystemsUI().run(args);
     }
 
     private DefaultTreeModel parse(String expression)
@@ -49,12 +74,70 @@ public class LexerTest {
 	        currentAST = ast;
 	        success = true;
 	        return new DefaultTreeModel(new NodeWrapper( ast ) );
-    	} finally {
+    	} 
+    	finally {
 	    	if ( ! success ) {
 	    		currentAST = new AST();
 	    	}
             prettyPrintedAST.setText( new ASTPrinter().print( currentAST ) );
+            populateSymbolTable( currentAST );
     	}
+    }
+    
+    private void populateSymbolTable(AST ast) 
+    {
+    	final Map<Identifier, Symbol> allSymbols = new ASTUtils().getAllSymbols( ast );
+    	
+    	final List<Symbol> list = new ArrayList<>();
+    	list.addAll( allSymbols.values() );
+    	
+    	symbols.setModel( new AbstractTableModel() {
+			
+    		@Override
+    		public Class<?> getColumnClass(int columnIndex) {
+    			return String.class;
+    		}
+    		
+    		@Override
+    		public String getColumnName(int columnIndex) {
+    			switch( columnIndex ) 
+				{
+					case 0:
+						return "Absolute name";
+					case 1:
+						return "Name";
+					case 2:
+						return "Type";
+					default:
+						throw new IllegalArgumentException("Unhandled column: "+columnIndex);
+				}
+    		}
+			@Override
+			public Object getValueAt(int rowIndex, int columnIndex) 
+			{
+				switch( columnIndex ) 
+				{
+					case 0:
+						return list.get(rowIndex).getAbsoluteName().toString();
+					case 1:
+						return list.get(rowIndex).getName().toString();
+					case 2:
+						return list.get(rowIndex).type.toString();
+					default:
+						throw new IllegalArgumentException("Unhandled column: "+columnIndex);
+				}
+			}
+			
+			@Override
+			public int getRowCount() {
+				return list.size();
+			}
+			
+			@Override
+			public int getColumnCount() {
+				return 3;
+			}
+		});
     }
 
     private void execute(AST ast)
@@ -62,10 +145,12 @@ public class LexerTest {
         this.engine.setAST( ast );
         engine.run();
 
-        final List<LSystemEngine.Variable> vars = new ArrayList<>();
-        vars.addAll( engine.getVariables().values() );
+        final List<String> vars = new ArrayList<>();
+        for ( Entry<Symbol, MyObject> entry : engine.getVariables().entrySet() ) {
+        	vars.add( entry.getKey().getAbsoluteName().toString()+" => "+entry.getValue().toString() );
+        }
 
-        variablesList.setModel( new AbstractListModel<LSystemEngine.Variable>() {
+        variablesList.setModel( new AbstractListModel<String>() {
 
             @Override
             public int getSize()
@@ -74,14 +159,14 @@ public class LexerTest {
             }
 
             @Override
-            public LSystemEngine.Variable getElementAt(int index)
+            public String getElementAt(int index)
             {
                 return vars.get(index);
             }
-        } );
+        });
     }
 
-    public LexerTest() {
+    public LSystemsUI() {
     }
     
     private void error(String message,Throwable t) 
@@ -170,7 +255,7 @@ public class LexerTest {
         // add JList that shows variables
         cnstrs = new GridBagConstraints();
         cnstrs.weightx = 0.5;
-        cnstrs.weighty = 1;
+        cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.HORIZONTAL;
         cnstrs.gridwidth=1;
         cnstrs.gridheight=1;
@@ -188,11 +273,25 @@ public class LexerTest {
         cnstrs.weightx = 1;
         cnstrs.weighty = weightY;
         cnstrs.fill = GridBagConstraints.BOTH;
-        cnstrs.gridwidth=2;
+        cnstrs.gridwidth=1;
         cnstrs.gridheight=1;
         cnstrs.gridx = 0;
         cnstrs.gridy = 2;
         panel.add( pane , cnstrs );
+        
+        // add symbols view
+        final  JScrollPane symbolsPane=new JScrollPane( symbols );
+        symbolsPane.setPreferredSize(new Dimension(200,200));
+
+        cnstrs = new GridBagConstraints();
+        cnstrs.weightx = 1;
+        cnstrs.weighty = weightY;
+        cnstrs.fill = GridBagConstraints.BOTH;
+        cnstrs.gridwidth=1;
+        cnstrs.gridheight=1;
+        cnstrs.gridx = 1;
+        cnstrs.gridy = 2;
+        panel.add( symbolsPane , cnstrs );        
 
         // add pretty-printed AST view
         final  JScrollPane pane2=new JScrollPane( prettyPrintedAST );
@@ -279,7 +378,7 @@ public class LexerTest {
             if ( currentAST != null )
             {
                 execute( currentAST );
-                new ASTRewriter().reduce( currentAST , engine.getCurrentContext() );
+                new ASTUtils().reduce( currentAST , engine.getCurrentContext() );
 
                 System.out.println("REDUCED: "+currentAST);
                 tree.setModel(new DefaultTreeModel(new NodeWrapper(currentAST)));
@@ -296,7 +395,8 @@ public class LexerTest {
         }
     }
 
-    private void addButton(JPanel panel,String label , int y , ActionListener listener) {
+    private void addButton(JPanel panel,String label , int y , ActionListener listener) 
+    {
         final JButton button = new JButton( label );
         button.addActionListener(listener);
 
@@ -311,11 +411,11 @@ public class LexerTest {
         panel.add( button , cnstrs );
     }
 
-    protected static final class NodeWrapper implements TreeNode {
+    protected static final class NodeWrapper implements TreeNode 
+    {
+        private final ASTNode node;
 
-        private final IASTNode node;
-
-        public NodeWrapper(IASTNode node) {
+        public NodeWrapper(ASTNode node) {
             if ( node == null ) {
                 throw new IllegalArgumentException("Node cannot be null");
             }
@@ -358,9 +458,9 @@ public class LexerTest {
         }
 
         @Override
-        public Enumeration children()
+        public Enumeration<Object> children()
         {
-            final Iterator<IASTNode> it = node.getChildren().iterator();
+            final Iterator<ASTNode> it = node.getChildren().iterator();
 
             return new Enumeration<Object>(){
 

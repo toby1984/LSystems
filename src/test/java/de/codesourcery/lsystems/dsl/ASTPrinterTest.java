@@ -1,7 +1,9 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.nodes.AST;
 import junit.framework.TestCase;
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.parsing.Parser;
+import de.codesourcery.lsystems.dsl.utils.ASTPrinter;
 
 /**
  * @author Tobias.Gierke@code-sourcery.de

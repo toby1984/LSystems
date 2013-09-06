@@ -1,8 +1,5 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.parsing;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  *
@@ -21,6 +18,8 @@ public enum ParsedTokenType
     UNPARSED, // anything that did not match any other token
     PARENS_OPEN, // (
     PARENS_CLOSE, // )
+    CURLY_BRACE_OPEN, // {
+    CURLY_BRACE_CLOSE, // }
     ARROW, // ->
     QUOTE, // ' or "
     /*

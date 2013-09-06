@@ -1,4 +1,4 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.parsing;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -6,6 +6,7 @@ import java.util.List;
 
 import de.codesourcery.lsystems.dsl.nodes.NumberNode;
 import de.codesourcery.lsystems.dsl.nodes.OperatorNode;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  *
@@ -79,7 +80,7 @@ public class DSLLexer {
     /**
      * 
      * @return true if parsing should continue, <code>false</code> if this method
-     * added one or more whitespace tokens to the queue and thus parsing does not need to continue
+     * added one or more whitespace tokens to the queue and thus parsing does NOT need to continue
      */
     private boolean parseAndSkipWhitespace() {
     	
@@ -151,7 +152,8 @@ public class DSLLexer {
 
         int offset = scanner.currentOffset();
         char c = scanner.peek();
-        while (!scanner.eof()) {
+        while (!scanner.eof()) 
+        {
             c = scanner.peek();
             
             if ( isWhitespace( c ) ) {
@@ -161,37 +163,35 @@ public class DSLLexer {
             {
                 case '\'':
                 case '\"':
-                    addUnparsed(offset);
-                    offset = scanner.currentOffset();
-                    addToken(new ParsedToken(ParsedTokenType.QUOTE, scanner.next(), offset ));
+                	addSingleCharacterToken(offset,ParsedTokenType.QUOTE);
                     return;
             	case ':':
-	                addUnparsed(offset);
-	                offset = scanner.currentOffset();
-	                addToken(new ParsedToken(ParsedTokenType.COLON, scanner.next(), offset ));
-	                return;                		
+            		addSingleCharacterToken(offset,ParsedTokenType.COLON);
+	                return;            
+                case '{':
+                	addSingleCharacterToken(offset,ParsedTokenType.CURLY_BRACE_OPEN);
+                    return;
+                case '}':
+                	addSingleCharacterToken(offset,ParsedTokenType.CURLY_BRACE_CLOSE);
+                    return;                    
                 case '(':
-                    addUnparsed(offset);
-                    offset = scanner.currentOffset();
-                    addToken(new ParsedToken(ParsedTokenType.PARENS_OPEN, scanner.next(), offset ));
+                	addSingleCharacterToken(offset,ParsedTokenType.PARENS_OPEN);                	
                     return;
                 case ')':
-                    addUnparsed(offset);
-                    offset = scanner.currentOffset();
-                    addToken(new ParsedToken(ParsedTokenType.PARENS_CLOSE, scanner.next(), offset ));
+                	addSingleCharacterToken(offset,ParsedTokenType.PARENS_CLOSE);
                     return;
                 case '-':
                     scanner.next();
                     if ( scanner.peek() == '>' ) { // found '->'
                     	scanner.next();
+                    	addUnparsed( offset );
                         addToken(new ParsedToken(ParsedTokenType.ARROW, "->", scanner.currentOffset()-1 ) );
                         return;
                     }
                     scanner.pushBack();
+                    break;
                 case '.':
-                    addUnparsed(offset);
-                    offset = scanner.currentOffset();
-                    addToken(new ParsedToken(ParsedTokenType.DOT, scanner.next(), offset ));
+                	addSingleCharacterToken(offset,ParsedTokenType.DOT);                	
                     return;
             }
 
@@ -222,6 +222,12 @@ public class DSLLexer {
         }
         addUnparsed(offset);
     }
+
+	private void addSingleCharacterToken(int offset,ParsedTokenType type) {
+		addUnparsed(offset);
+		final int currentOffset = scanner.currentOffset();
+		addToken(new ParsedToken(type, scanner.next(), currentOffset ));
+	}
     
     private boolean bufferContainsNoValidIdentifier() 
     {

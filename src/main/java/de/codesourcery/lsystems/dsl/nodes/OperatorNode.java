@@ -1,13 +1,13 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class OperatorNode extends ASTNode implements TermNode {
+public class OperatorNode extends AbstractASTNode implements TermNode {
 
     public ExpressionNode.Operator type;
 
@@ -45,7 +45,7 @@ public class OperatorNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public IASTNode parse(ParseContext context) {
+    public ASTNode parse(ParseContext context) {
         context.fail("Not implemented");
         return null; // never reached
     }

@@ -1,6 +1,12 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.utils;
 
-import de.codesourcery.lsystems.dsl.nodes.*;
+import de.codesourcery.lsystems.dsl.nodes.ASTNode;
+import de.codesourcery.lsystems.dsl.nodes.IdentifierNode;
+import de.codesourcery.lsystems.dsl.nodes.NodeVisitor;
+import de.codesourcery.lsystems.dsl.nodes.NumberNode;
+import de.codesourcery.lsystems.dsl.nodes.OperatorNode;
+import de.codesourcery.lsystems.dsl.nodes.Statement;
+import de.codesourcery.lsystems.dsl.nodes.StringNode;
 
 /**
  * @author Tobias.Gierke@code-sourcery.de
@@ -9,13 +15,13 @@ public class ASTPrinter {
 
     private final StringBuilder buffer = new StringBuilder();
 
-    public String print(IASTNode ast)
+    public String print(ASTNode ast)
     {
         buffer.setLength(0);
 
         ast.visitInOrder(new NodeVisitor() {
             @Override
-            public void visit(IASTNode node, IterationContext context)
+            public void visit(ASTNode node, IterationContext context)
             {
                 System.out.println("Visiting "+node.toDebugString());
                 printNode( node , context );
@@ -24,7 +30,7 @@ public class ASTPrinter {
         return buffer.toString();
     }
 
-    private void printNode(IASTNode node, NodeVisitor.IterationContext context) {
+    private void printNode(ASTNode node, NodeVisitor.IterationContext context) {
 
         if ( node instanceof Statement)
         {

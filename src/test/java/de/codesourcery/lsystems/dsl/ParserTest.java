@@ -1,8 +1,16 @@
 package de.codesourcery.lsystems.dsl;
 
-import de.codesourcery.lsystems.dsl.nodes.*;
-import jdk.nashorn.internal.ir.Assignment;
 import junit.framework.TestCase;
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.nodes.ASTNode;
+import de.codesourcery.lsystems.dsl.nodes.ExpressionNode;
+import de.codesourcery.lsystems.dsl.nodes.IdentifierNode;
+import de.codesourcery.lsystems.dsl.nodes.NumberNode;
+import de.codesourcery.lsystems.dsl.nodes.OperatorNode;
+import de.codesourcery.lsystems.dsl.nodes.Statement;
+import de.codesourcery.lsystems.dsl.nodes.TermNode;
+import de.codesourcery.lsystems.dsl.parsing.Parser;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  * @author Tobias.Gierke@code-sourcery.de
@@ -16,7 +24,7 @@ public class ParserTest extends TestCase {
         assertTrue( ast.hasChildren() );
         assertEquals(Statement.class, ast.child(0).getClass());
 
-        IASTNode expr = ast.child(0).child(0);
+        ASTNode expr = ast.child(0).child(0);
         assertEquals(ExpressionNode.class, expr.getClass());
 
         assertEquals(OperatorNode.class, expr.child(0).getClass());

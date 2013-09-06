@@ -1,12 +1,11 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import org.omg.CORBA.UNKNOWN;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public interface TermNode extends IASTNode
+public interface TermNode extends ASTNode
 {
     public static enum TermType
     {

@@ -1,7 +1,8 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.Identifier;
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
+import de.codesourcery.lsystems.dsl.symbols.Scope;
 
 /**
  *
@@ -9,5 +10,5 @@ import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
  */
 public interface ExpressionContext {
 
-    public IASTNode lookup(Identifier identifier) throws UnknownIdentifierException;
+    public ASTNode lookup(Identifier identifier, Scope scope, boolean searchParentScopes) throws UnknownIdentifierException;
 }

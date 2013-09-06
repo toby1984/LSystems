@@ -31,13 +31,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-import de.codesourcery.lsystems.dsl.Identifier;
-import de.codesourcery.lsystems.dsl.LSystemFactory;
-import de.codesourcery.lsystems.dsl.Parser;
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
+import de.codesourcery.lsystems.dsl.execution.LSystemFactory;
 import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.nodes.ASTNode;
 import de.codesourcery.lsystems.dsl.nodes.ExpressionContext;
-import de.codesourcery.lsystems.dsl.nodes.IASTNode;
+import de.codesourcery.lsystems.dsl.parsing.Parser;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 import de.codesourcery.lsystems.lsystem.LSystem;
 import de.codesourcery.lsystems.lsystem.ParameterProvider;
 import de.codesourcery.lsystems.lsystem.RuleGenerator;
@@ -98,16 +98,7 @@ public class Main extends RuleGenerator
 		
 		final AST ast = new Parser().parse( dsl );
 
-
-        final ExpressionContext context = new ExpressionContext() {
-
-            @Override
-            public IASTNode lookup(Identifier identifier) throws UnknownIdentifierException {
-                throw new UnknownIdentifierException( identifier );
-            }
-        };
-
-		final LSystem result = new LSystemFactory().createLSystem( ast , context );
+		final LSystem result = new LSystemFactory().createLSystem( ast );
 
         final ParameterProvider provider = new ParameterProvider()
         {

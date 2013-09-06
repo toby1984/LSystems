@@ -2,15 +2,15 @@ package de.codesourcery.lsystems.dsl.nodes;
 
 import java.util.regex.Pattern;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class NumberNode extends ASTNode implements TermNode {
+public class NumberNode extends AbstractASTNode implements TermNode {
 
     private static final Pattern VALID_NUMBER = Pattern.compile("[0-9]+");
 
@@ -59,7 +59,7 @@ public class NumberNode extends ASTNode implements TermNode {
     }
 
     @Override
-    public IASTNode parse(ParseContext context)
+    public ASTNode parse(ParseContext context)
     {
         final ParsedToken tok = mergeRegion(context.next(ParsedTokenType.NUMBER));
 

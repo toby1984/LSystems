@@ -1,23 +1,25 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.Identifier;
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  *
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class IdentifierNode extends ASTNode implements TermNode
+public class IdentifierNode extends AbstractASTNode implements TermNode
 {
     public Identifier value;
 
     @Override
-    public IASTNode parse(ParseContext context) {
+    public ASTNode parse(ParseContext context) {
         final ParsedToken token = mergeRegion(context.next(ParsedTokenType.IDENTIFIER));
         this.value = new Identifier(token.value);
+        
+        context.getCurrentScope().declareVariable( value  , this );
         return this;
     }
 
@@ -34,7 +36,7 @@ public class IdentifierNode extends ASTNode implements TermNode
     @Override
     public TermNode evaluate(ExpressionContext context) throws UnknownIdentifierException
     {
-        IASTNode value = context.lookup(this.value);
+        ASTNode value = context.lookup(this.value, getDefinitionScope() , false);
         if ( value instanceof TermNode) {
             return ((TermNode) value).evaluate( context );
         }
@@ -44,15 +46,6 @@ public class IdentifierNode extends ASTNode implements TermNode
     @Override
     public TermNode reduce(ExpressionContext context)
     {
-        IASTNode value = context.lookup(this.value);
-        if ( value instanceof TermNode) {
-            final TermNode initialNode = (TermNode) value;
-            TermNode result =  initialNode.reduce(context);
-            if ( result != initialNode && result instanceof IdentifierNode) {
-                return result.reduce( context );
-            }
-            return result;
-        }
         return this;
     }
 

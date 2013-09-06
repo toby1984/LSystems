@@ -1,14 +1,18 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
 
-public class Statement extends ASTNode 
+public class Statement extends AbstractASTNode 
 {
 	@Override
-	public IASTNode parse(ParseContext context)
+	public ASTNode parse(ParseContext context)
 	{
-		if ( context.peek(ParsedTokenType.RULE ) )
+		if ( context.peek(ParsedTokenType.CURLY_BRACE_OPEN ) ) 
+		{
+			addChild( new Block().parse(context) );
+		} 
+		else if ( context.peek(ParsedTokenType.RULE ) )
 		{
 			addChild( new RuleDefinition().parse( context ) );
 		} 
@@ -25,7 +29,7 @@ public class Statement extends ASTNode
 	}
 
 	@Override
-	protected IASTNode cloneThisNodeOnly() {
+	protected ASTNode cloneThisNodeOnly() {
 		return new Statement();
 	}
 

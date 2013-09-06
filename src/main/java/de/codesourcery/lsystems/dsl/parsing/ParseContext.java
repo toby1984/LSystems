@@ -1,4 +1,6 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.parsing;
+
+import de.codesourcery.lsystems.dsl.symbols.Scope;
 
 /**
  *
@@ -21,4 +23,10 @@ public interface ParseContext {
 	boolean isSkipWhitespace();
 
 	void setSkipWhitespace(boolean b);
+	
+	public void pushScope(Scope scope);
+	
+	public Scope popScope();
+	
+	public Scope getCurrentScope();
 }

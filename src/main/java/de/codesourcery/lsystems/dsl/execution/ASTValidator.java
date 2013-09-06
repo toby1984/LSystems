@@ -1,17 +1,18 @@
-package de.codesourcery.lsystems.dsl;
+package de.codesourcery.lsystems.dsl.execution;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
-import de.codesourcery.lsystems.dsl.nodes.*;
-import jdk.nashorn.internal.ir.Assignment;
 import org.apache.commons.lang.StringUtils;
+
+import de.codesourcery.lsystems.dsl.nodes.AST;
+import de.codesourcery.lsystems.dsl.nodes.ASTNode;
+import de.codesourcery.lsystems.dsl.nodes.ExpressionContext;
+import de.codesourcery.lsystems.dsl.nodes.NodeMatcher;
+import de.codesourcery.lsystems.dsl.nodes.RuleDefinition;
+import de.codesourcery.lsystems.dsl.symbols.Identifier;
 
 /**
  * Performs semantic validation on an {@link AST}.
@@ -26,9 +27,9 @@ public class ASTValidator
 	public static final class ValidationError 
 	{
 		public final String message;
-		public final IASTNode node;
+		public final ASTNode node;
 		
-		public ValidationError(String message, IASTNode node) {
+		public ValidationError(String message, ASTNode node) {
 			if ( message == null ) {
 				throw new IllegalArgumentException("message must not be NULL");
 			}
@@ -51,7 +52,7 @@ public class ASTValidator
 			addError(message,null);
 		}		
 		
-		public void addError(String message, IASTNode node) {
+		public void addError(String message, ASTNode node) {
 			addError( new ValidationError(message,node ) );
 		}
 		
@@ -80,7 +81,7 @@ public class ASTValidator
 		}
 	}
 	
-	public ValidationResult validate(AST ast,ExpressionContext context)
+	public ValidationResult validate(AST ast)
 	{
 		final ValidationResult result = new ValidationResult();
 		
@@ -103,7 +104,7 @@ public class ASTValidator
 		return ast.find( new NodeMatcher() {
 
 			@Override
-			public boolean matches(IASTNode node)
+			public boolean matches(ASTNode node)
 			{
 				return node instanceof RuleDefinition;
 			}

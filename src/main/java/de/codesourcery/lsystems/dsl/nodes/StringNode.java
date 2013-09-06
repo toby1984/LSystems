@@ -1,13 +1,13 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
-import de.codesourcery.lsystems.dsl.ParseContext;
-import de.codesourcery.lsystems.dsl.ParsedToken;
-import de.codesourcery.lsystems.dsl.ParsedTokenType;
+import de.codesourcery.lsystems.dsl.parsing.ParseContext;
+import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
+import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;
 
 /**
  * @author Tobias.Gierke@code-sourcery.de
  */
-public class StringNode extends ASTNode implements TermNode
+public class StringNode extends AbstractASTNode implements TermNode
 {
     public String value;
 
@@ -40,7 +40,7 @@ public class StringNode extends ASTNode implements TermNode
     }
 
     @Override
-    public IASTNode parse(ParseContext context)
+    public ASTNode parse(ParseContext context)
     {
         mergeRegion( context.next(ParsedTokenType.QUOTE) );
 

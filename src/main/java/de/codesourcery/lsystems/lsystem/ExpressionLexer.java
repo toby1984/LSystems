@@ -15,8 +15,6 @@ public class ExpressionLexer implements TokenStream
 	private final Scanner scanner;
 	private final StringBuilder buffer = new StringBuilder();
 
-	private String input;
-	
 	public static TokenSeq parse(String s) {
 		ExpressionLexer lexer = new ExpressionLexer(s);
 		final List<Token> tok = new ArrayList<>();
@@ -75,7 +73,6 @@ public class ExpressionLexer implements TokenStream
 		if ( DEBUG) {
 			System.out.println("PARSING >"+s+"<");
 		}
-		this.input=s;
 		this.scanner = new Scanner(s);
 	}
 	
