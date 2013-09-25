@@ -1,6 +1,7 @@
 package de.codesourcery.lsystems.dsl.nodes;
 
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
+import de.codesourcery.lsystems.dsl.execution.MyObject;
 import de.codesourcery.lsystems.dsl.parsing.ParseContext;
 import de.codesourcery.lsystems.dsl.parsing.ParsedToken;
 import de.codesourcery.lsystems.dsl.parsing.ParsedTokenType;

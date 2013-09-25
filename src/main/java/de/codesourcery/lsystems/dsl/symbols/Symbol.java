@@ -47,6 +47,10 @@ public abstract class Symbol
 		return name;
 	}
 	
+	public Scope getScope() {
+		return scope;
+	}
+	
 	private Identifier createAbsoluteName() {
 		return Identifier.createInternalIdentifier( scope.getAbsoluteName().toString()+"$"+name.toString() );
 	}	

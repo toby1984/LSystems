@@ -12,7 +12,7 @@ public class Statement extends AbstractASTNode
 		{
 			addChild( new Block().parse(context) );
 		} 
-		else if ( context.peek(ParsedTokenType.RULE ) )
+		else if ( context.peek( ParsedTokenType.RULE ) )
 		{
 			addChild( new RuleDefinition().parse( context ) );
 		} 

@@ -146,7 +146,7 @@ public class LSystemsUI
         engine.run();
 
         final List<String> vars = new ArrayList<>();
-        for ( Entry<Symbol, MyObject> entry : engine.getVariables().entrySet() ) {
+        for ( Entry<Symbol, MyObject> entry : engine.getVariables().getAll().entrySet() ) {
         	vars.add( entry.getKey().getAbsoluteName().toString()+" => "+entry.getValue().toString() );
         }
 

@@ -1,8 +1,14 @@
 package de.codesourcery.lsystems.dsl.execution;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import com.sun.istack.internal.NotNull;
 
 import de.codesourcery.lsystems.dsl.exceptions.InvalidInstructionException;
 import de.codesourcery.lsystems.dsl.exceptions.UnknownIdentifierException;
@@ -42,9 +48,8 @@ public class LSystemInterpreter {
         return variables;
     }
 
-    public Map<Symbol,MyObject> getVariables()
-    {
-    	return variables.variables;
+    public Variables getVariables() {
+    	return variables;
     }
 
     public String getStringValue(Identifier identifier) 
@@ -78,13 +83,76 @@ public class LSystemInterpreter {
         }
     }
 
-    protected static final class Variables implements ExpressionContext
+    public static final class Variables implements ExpressionContext
     {
-        public final Map<Symbol,MyObject> variables = new HashMap<>();
+        protected final Map<Symbol,MyObject> variables = new HashMap<>();
 
         public void clear() {
             variables.clear();
         }
+        
+        public Map<Symbol,MyObject> getAll() {
+        	return new HashMap<>( variables );
+        }
+        
+        /**
+         * Returns all symbols within a given scope.
+         * 
+         * @param scope
+         * @param includeParentScopes
+         * @return
+         */
+        public Map<Symbol,MyObject> getAll(Scope scope,boolean includeParentScopes) 
+        {
+        	if ( scope == null ) {
+				throw new IllegalArgumentException("scope must not be NULL");
+			}
+        	
+        	final List<Scope> scopes = new ArrayList<>();
+        	if ( includeParentScopes ) 
+        	{
+            	// gather scope hierarchy in a list to support
+        		// shadowing variables from outer scopes
+        		
+            	// first list element = top-level scope        		
+	        	Scope current = scope;
+	        	while( current != null ) 
+	        	{
+	        		scopes.add( current );
+	        		current = scope.getParentScope();
+	        	}
+        	} else {
+        		scopes.add( scope );
+        	}
+        	
+        	final Map<Identifier,Symbol> symbolsInScope = new HashMap<>();
+        	
+        	// starting at the top-level scope and working our
+        	// way down to the actual scope requested by the user, gather
+        	// all symbols within the scope and put them 
+        	// in a map. Due to the way we traverse the scope hierarchy,
+        	// this will automatically replace variables from a higher-up scope
+        	// with re-definitions in a scope further down the hierarchy (variable shadowing)
+        	for ( Scope s : scopes ) 
+        	{
+        		for ( Symbol symbol : variables.keySet() ) 
+        		{
+        			if ( symbol.getScope().equals( s ) ) 
+        			{
+        				// TODO: This code currently throws all symbols into the same map bucket -- if we have symbols of different types
+        				// TODO: we might want to have separate namespaces for those ....
+        				symbolsInScope.put( symbol.getName() , symbol );
+        			}
+        		}
+        	}
+        	
+        	final Map<Symbol,MyObject> result = new HashMap<>();
+        	for ( Symbol s : symbolsInScope.values() ) 
+        	{
+        		result.put( s , variables.get( s ) );
+        	}
+        	return result;
+        }        
 
         public void set(Symbol identifier,MyObject value)
         {
@@ -121,8 +189,25 @@ public class LSystemInterpreter {
         public ASTNode lookup(Identifier identifier, Scope scope, boolean searchParentScopes) throws UnknownIdentifierException 
         {
         	Symbol symbol = scope.getSymbolTable().getSymbol( identifier , searchParentScopes );
-        	if ( symbol.hasType( SymbolType.VARIABLE ) ) {
-        		// return symbol.
+        	if ( symbol.hasType( SymbolType.VARIABLE ) ) 
+        	{
+        		final MyObject object = this.variables.get( symbol );
+        		if ( object == null ) {
+        			throw new UnknownIdentifierException("Unknown variable identifier '"+identifier+"' in scope "+scope, identifier);
+        		}
+        		final Object value = object.getPrimitiveValue();
+        		if ( value instanceof Number) 
+        		{
+        			if ( value instanceof Short || value instanceof Long || value instanceof Integer || value instanceof Byte) {
+        				return new NumberNode( ((Number) value).doubleValue() , TermType.INTEGER );
+        			}
+        			return new NumberNode( ((Number) value).doubleValue() , TermType.FLOATING_POINT );
+        		} 
+        		if ( value instanceof String) 
+        		{
+        			return new StringNode( (String) value );
+        		}
+        		throw new RuntimeException("Don't know how to evaluate value "+value+" with identifier '"+identifier+"' in scope "+scope);
         	}
             throw new RuntimeException("Internal error, don't know how to handle "+symbol);
         }
@@ -256,17 +341,21 @@ public class LSystemInterpreter {
             
             if ( updateRequired ) {
             	symbol = new VariableSymbol(var , scope , operatorNode , type );
+            	debug("updating symbol table, adding "+symbol);
             	symbolTable.addOrUpdateSymbol( symbol );
             }
             
             if ( variables.isDefined( symbol.getName() ) ) {
-            	MyObject existing = variables.get( symbol.getName() );
+            	debug("Setting primitive value "+value+" on existing variable "+symbol);
+            	final MyObject existing = variables.get( symbol.getName() );
             	if ( ! existing.isPrimitive() ) {
             		throw new RuntimeException("Internal error, not a primitive object "+existing);
             	}
             	existing.setPrimitiveValue( value );
             } else {
-            	MyObject obj = new MyObject(type,true ); 
+            	debug("Setting primitive value "+value+" on NEW variable "+symbol);            	
+            	final MyObject obj = new MyObject(type,true ); 
+            	obj.setPrimitiveValue( value );
             	variables.set( symbol , obj );
             }
             return;

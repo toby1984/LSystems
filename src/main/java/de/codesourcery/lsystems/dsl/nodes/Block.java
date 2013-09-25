@@ -17,7 +17,7 @@ public class Block extends AbstractASTNode implements ScopeDefinition
     	
     	mergeRegion( context.next(ParsedTokenType.CURLY_BRACE_OPEN ) );
     	
-    	while ( ! context.eof() ) {
+    	while ( ! context.eof() && ! context.peek( ParsedTokenType.CURLY_BRACE_CLOSE ) ) {
     		addChild( new Statement().parse( context ) );
     	}
     	
